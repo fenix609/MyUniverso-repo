@@ -1,0 +1,11 @@
+{
+  "peliculas": [
+    {"title": "Película de ejemplo", "url": "https://ejemplo.com/pelicula.mp4", "thumb": "", "plot": "Descripción"}
+  ],
+  "series": [
+    {"title": "Serie de ejemplo", "thumb": "", "episodes": [
+      {"title": "1x01 Piloto", "url": "https://ejemplo.com/s01e01.mp4"},
+      {"title": "1x02 Segundo", "url": "https://ejemplo.com/s01e02.mp4"}
+    ]}
+  ]
+}

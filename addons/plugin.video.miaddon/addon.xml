@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.miaddon" name="MiAddon" version="1.0.0" provider-name="MyUniverso">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="es_ES">Cine, series, TV, YouTube y archivos en un solo add-on</summary>
+    <summary lang="en_GB">Movies, series, TV, YouTube and files in one add-on</summary>
+    <description lang="es_ES">Add-on de MyUniverso: catálogo de películas y series (JSON propio), televisión por lista M3U, acceso a YouTube y navegador de archivos locales o de red.</description>
+    <description lang="en_GB">MyUniverso add-on: movie and series catalogue (own JSON), TV via M3U list, YouTube access and local/network file browser.</description>
+    <platform>all</platform>
+    <license>GPL-3.0-or-later</license>
+    <news>1.0.0 - Primera versión</news>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
+</addon>

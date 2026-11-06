@@ -1,0 +1,62 @@
+# MiAddon strings
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: es_ES\n"
+
+msgctxt "#30100"
+msgid "General"
+msgstr "General"
+
+msgctxt "#30101"
+msgid "Catalogue JSON URL (movies/series)"
+msgstr "URL del catálogo JSON (películas/series)"
+
+msgctxt "#30102"
+msgid "TV M3U list URL"
+msgstr "URL de la lista M3U de TV"
+
+msgctxt "#30103"
+msgid "Files folder (local or network)"
+msgstr "Carpeta de archivos (local o red)"
+
+msgctxt "#30200"
+msgid "Movies"
+msgstr "Películas"
+
+msgctxt "#30201"
+msgid "Series"
+msgstr "Series"
+
+msgctxt "#30202"
+msgid "Television"
+msgstr "Televisión"
+
+msgctxt "#30203"
+msgid "YouTube"
+msgstr "YouTube"
+
+msgctxt "#30204"
+msgid "Files"
+msgstr "Archivos"
+
+msgctxt "#30300"
+msgid "Set the catalogue URL in settings"
+msgstr "Configura la URL del catálogo en los ajustes"
+
+msgctxt "#30301"
+msgid "Could not read the catalogue"
+msgstr "No se pudo leer el catálogo"
+
+msgctxt "#30302"
+msgid "Set the M3U list in settings"
+msgstr "Configura la lista M3U en los ajustes"
+
+msgctxt "#30303"
+msgid "Could not read the M3U list"
+msgstr "No se pudo leer la lista M3U"
+
+msgctxt "#30304"
+msgid "Set the files folder in settings"
+msgstr "Configura la carpeta de archivos en los ajustes"
+
