@@ -1,23 +1,35 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-<addon id="plugin.video.miaddon" name="MiAddon" version="1.0.0" provider-name="MyUniverso">
+<addon id="plugin.video.miaddon" name="mi addon" version="1.0.1" provider-name="miaddon">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
+    <!-- Obligatorias (repositorio oficial de Kodi 19+) -->
+    <import addon="script.module.requests"/>
+    <import addon="script.module.beautifulsoup4"/>
+    <import addon="script.module.inputstreamhelper"/>
+    <import addon="plugin.video.youtube"/>
+    <!-- Reproducción de streams: opcionales para que la instalación nunca falle;
+         Kodi las instala solas si están en tus repositorios -->
+    <import addon="inputstream.adaptive" optional="true"/>
+    <import addon="inputstream.ffmpegdirect" optional="true"/>
+    <import addon="inputstream.rtmp" optional="true"/>
+    <import addon="pvr.iptvsimple" optional="true"/>
+    <!-- Torrents (repos de terceros): Elementum o Torrest, cualquiera de los dos -->
+    <import addon="plugin.video.elementum" optional="true"/>
+    <import addon="plugin.video.torrest" optional="true"/>
+    <!-- Resolución de enlaces de hosters (repo de terceros) -->
+    <import addon="script.module.resolveurl" optional="true"/>
   </requires>
-  <extension point="xbmc.python.pluginsource" library="main.py">
+  <extension point="xbmc.python.pluginsource" library="addon.py">
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary lang="es_ES">Cine, series, TV, YouTube y archivos en un solo add-on</summary>
-    <summary lang="en_GB">Movies, series, TV, YouTube and files in one add-on</summary>
-    <description lang="es_ES">Add-on de MyUniverso: catálogo de películas y series (JSON propio), televisión por lista M3U, acceso a YouTube y navegador de archivos locales o de red.</description>
-    <description lang="en_GB">MyUniverso add-on: movie and series catalogue (own JSON), TV via M3U list, YouTube access and local/network file browser.</description>
+    <summary lang="es_ES">Addon personal con menús de contenido</summary>
+    <description lang="es_ES">Menú principal con Películas, Series, Deportes, Televisión, Cocina y Varios. Soporta HLS, DASH, RTMP, listas M3U, DRM Widevine, torrents (vía Elementum/Torrest) y YouTube (vídeos, listas, canales y búsquedas) y enlaces plugin://. El contenido se define en resources/lib/menus.py</description>
     <platform>all</platform>
-    <license>GPL-3.0-or-later</license>
-    <news>1.0.0 - Primera versión</news>
+    <license>GPL-2.0-or-later</license>
     <assets>
       <icon>icon.png</icon>
-      <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
 </addon>
