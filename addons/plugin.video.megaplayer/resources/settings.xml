@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+  <category label="Cuenta MEGA">
+    <setting id="email" type="text" label="Correo electrónico" default=""/>
+    <setting id="password" type="text" option="hidden" label="Contraseña" default=""/>
+    <setting id="mfa" type="text" label="Código 2FA (solo si lo tienes activado)" default=""/>
+    <setting id="port" type="number" label="Puerto local del servidor (reiniciar Kodi si cambia)" default="8765"/>
+  </category>
+  <category label="Torrents">
+    <setting id="torrent_engine" type="enum" label="Motor de torrents" values="Elementum|Torrest" default="0"/>
+  </category>
+  <category label="Biblioteca">
+    <setting id="export_path" type="folder" label="Carpeta destino de los .strm" option="writeable" default=""/>
+    <setting id="thumbs" type="bool" label="Usar las propias fotos como miniatura" default="true"/>
+  </category>
+</settings>
