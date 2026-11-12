@@ -13,6 +13,7 @@ UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
 VIDEO_EXT = ('.mkv', '.mp4', '.avi', '.mov', '.m4v', '.webm', '.ts',
              '.wmv', '.flv', '.mpg', '.mpeg')
 IMAGE_EXT = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp')
+SUB_EXT = ('.srt', '.ass', '.ssa', '.sub', '.vtt')
 
 _ID_PATTERNS = [
     r'/file/d/([A-Za-z0-9_-]{10,})',
@@ -41,6 +42,8 @@ def kind_of(name):
         return 'video'
     if ext in IMAGE_EXT:
         return 'image'
+    if ext in SUB_EXT:
+        return 'sub'
     return None
 
 
@@ -145,3 +148,37 @@ def resolve_video(file_id):
 
 def image_url(file_id):
     return 'https://drive.google.com/thumbnail?id=%s&sz=w1920' % file_id
+
+
+# ------------------------------------------------------------ subtítulos
+def match_subs(video_name, subs):
+    """Subtítulos de la misma carpeta que corresponden a un vídeo."""
+    vstem = os.path.splitext(video_name)[0].lower()
+    se = parse_se(video_name)
+    out = []
+    for sub in subs:
+        sstem = os.path.splitext(sub['name'])[0].lower()
+        if sstem.startswith(vstem) or (se and parse_se(sub['name']) == se):
+            out.append({'id': sub['id'], 'name': sub['name']})
+    return out
+
+
+def fetch_subtitle(file_id, name, dest_dir):
+    """Descarga un subtítulo de Drive a disco (con caché) y devuelve su ruta."""
+    if not os.path.isdir(dest_dir):
+        os.makedirs(dest_dir)
+    safe = re.sub(r'[\\/:*?"<>|]', '_', name)
+    path = os.path.join(dest_dir, '%s_%s' % (file_id[:6], safe))
+    if os.path.isfile(path) and os.path.getsize(path) > 0:
+        return path
+    url = ('https://drive.usercontent.google.com/download?id=%s'
+           '&export=download&confirm=t' % file_id)
+    resp = _get(url)
+    if 'text/html' in resp.headers.get('Content-Type', ''):
+        resp.close()
+        raise IOError('Subtítulo no accesible')
+    data = resp.read(5 * 1024 * 1024)
+    resp.close()
+    with open(path, 'wb') as f:
+        f.write(data)
+    return path

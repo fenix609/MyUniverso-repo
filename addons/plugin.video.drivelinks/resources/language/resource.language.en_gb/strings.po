@@ -1,0 +1,64 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en_GB\n"
+
+msgctxt "#30000"
+msgid "General"
+msgstr "General"
+
+msgctxt "#30001"
+msgid "Folder import"
+msgstr "Folder import"
+
+msgctxt "#30002"
+msgid "Subtitles"
+msgstr "Subtitles"
+
+msgctxt "#30010"
+msgid "Import subfolders"
+msgstr "Import subfolders"
+
+msgctxt "#30011"
+msgid "Maximum subfolder depth"
+msgstr "Maximum subfolder depth"
+
+msgctxt "#30013"
+msgid "Load subtitles linked from Drive"
+msgstr "Load subtitles linked from Drive"
+
+msgctxt "#30003"
+msgid "Google account (optional)"
+msgstr "Google account (optional)"
+
+msgctxt "#30020"
+msgid "OAuth credentials (own Client ID)"
+msgstr "OAuth credentials (own Client ID)"
+
+msgctxt "#30021"
+msgid "Client ID"
+msgstr "Client ID"
+
+msgctxt "#30022"
+msgid "Client Secret"
+msgstr "Client Secret"
+
+msgctxt "#30023"
+msgid "Sign in with Google"
+msgstr "Sign in with Google"
+
+msgctxt "#30024"
+msgid "Sign out"
+msgstr "Sign out"
+
+msgctxt "#30025"
+msgid "Session"
+msgstr "Session"
+
+msgctxt "#30026"
+msgid "Use my account for playback when signed in"
+msgstr "Use my account for playback when signed in"
+
+msgctxt "#30027"
+msgid "Local service that refreshes access during playback (recommended)"
+msgstr "Local service that refreshes access during playback (recommended)"

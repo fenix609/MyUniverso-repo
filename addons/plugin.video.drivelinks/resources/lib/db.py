@@ -55,3 +55,20 @@ def update(file_id, **fields):
 def remove_group(kind, key, value):
     """Borra todos los items de un tipo cuyo campo key == value (serie o álbum)."""
     save([i for i in load() if not (i['type'] == kind and i.get(key) == value)])
+
+
+def get(file_id):
+    for i in load():
+        if i['id'] == file_id:
+            return i
+    return None
+
+
+def add_sub(file_id, sub):
+    items = load()
+    for i in items:
+        if i['id'] == file_id:
+            subs = i.setdefault('subs', [])
+            if sub['id'] not in {x['id'] for x in subs}:
+                subs.append(sub)
+    save(items)

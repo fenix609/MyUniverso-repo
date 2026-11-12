@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings version="1">
+  <section id="plugin.video.drivelinks">
+    <category id="general" label="30000">
+      <group id="1" label="30001">
+        <setting id="import_subfolders" type="boolean" label="30010">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="max_depth" type="integer" label="30011">
+          <level>0</level>
+          <default>4</default>
+          <constraints>
+            <minimum>1</minimum>
+            <step>1</step>
+            <maximum>8</maximum>
+          </constraints>
+          <control type="slider" format="integer">
+            <popup>false</popup>
+          </control>
+        </setting>
+      </group>
+      <group id="2" label="30002">
+        <setting id="subs_enabled" type="boolean" label="30013">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+      </group>
+    </category>
+    <category id="account" label="30003">
+      <group id="3" label="30020">
+        <setting id="client_id" type="string" label="30021">
+          <level>0</level>
+          <default></default>
+          <control type="edit" format="string">
+            <heading>30021</heading>
+          </control>
+        </setting>
+        <setting id="client_secret" type="string" label="30022">
+          <level>0</level>
+          <default></default>
+          <control type="edit" format="string">
+            <heading>30022</heading>
+            <hidden>true</hidden>
+          </control>
+        </setting>
+      </group>
+      <group id="4" label="30025">
+        <setting id="do_login" type="action" label="30023">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.drivelinks/?mode=login)</data>
+          <control type="button" format="action">
+            <close>true</close>
+          </control>
+        </setting>
+        <setting id="do_logout" type="action" label="30024">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.drivelinks/?mode=logout)</data>
+          <control type="button" format="action">
+            <close>true</close>
+          </control>
+        </setting>
+        <setting id="prefer_account" type="boolean" label="30026">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="use_proxy" type="boolean" label="30027">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+      </group>
+    </category>
+  </section>
+</settings>

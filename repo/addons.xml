@@ -1,17 +1,22 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-<addon id="plugin.video.drivelinks-1.0.0" name="Drive Links" version="1.0.0" provider-name="Tu nombre">
+<addon id="plugin.video.drivelinks-1.3.0" name="Drive Links" version="1.3.0" provider-name="Tu nombre">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
   </requires>
   <extension point="xbmc.python.pluginsource" library="main.py">
     <provides>video image</provides>
   </extension>
+  <extension point="xbmc.service" library="service.py" start="login"/>
   <extension point="xbmc.addon.metadata">
     <summary lang="es_ES">Reproduce vídeos, series y fotos de Google Drive con enlaces públicos</summary>
     <description lang="es_ES">Biblioteca propia de películas, series y fotos alojadas en Google Drive (compartidas con "Cualquier persona con el enlace"). No necesita iniciar sesión ni claves de API. Permite añadir enlaces sueltos o importar carpetas completas.</description>
     <disclaimer lang="es_ES">Usa solo contenido del que tengas derechos.</disclaimer>
     <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
     <license>MIT</license>
   </extension>
 </addon>
