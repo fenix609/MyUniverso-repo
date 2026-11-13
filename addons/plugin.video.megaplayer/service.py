@@ -81,6 +81,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(MANAGER.get(acc).list_children(q.get('parent')))
             elif u.path == '/walk':
                 self._json(MANAGER.get(acc).walk(q.get('parent')))
+            elif u.path == '/reset':
+                MANAGER.reset()
+                self._json({'ok': True})
             elif u.path == '/refresh':
                 MANAGER.reset(acc)
                 MANAGER.get(acc)

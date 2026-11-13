@@ -6,7 +6,7 @@ import xbmc, xbmcgui, xbmcplugin, xbmcaddon, xbmcvfs
 
 ADDON = xbmcaddon.Addon()
 sys.path.insert(0, os.path.join(ADDON.getAddonInfo('path'), 'resources', 'lib'))
-from accounts import get_accounts
+from accounts import get_accounts, add_account, update_account, delete_account
 
 HANDLE = int(sys.argv[1])
 BASE = sys.argv[0]
@@ -51,11 +51,12 @@ def add(label, u, folder, li=None):
 def root_menu():
     accs = get_accounts()
     if not accs:
-        xbmcgui.Dialog().ok('MEGA Player', 'Añade al menos una cuenta MEGA en los ajustes del addon.')
-        ADDON.openSettings()
+        if xbmcgui.Dialog().yesno('MEGA Player', 'Todavía no hay cuentas MEGA. ¿Quieres añadir una ahora?'):
+            add_account_flow()
         return xbmcplugin.endOfDirectory(HANDLE, False)
     for a in accs:
         add(a['name'], url(a='folder', acc=a['id'], h=''), True)
+    add('Gestionar cuentas (añadir / editar / eliminar)', url(a='accounts'), False)
     add('Reproducir magnet / torrent (pegar enlace)', url(a='magnet'), False)
     add('Exportar vídeos a la biblioteca de Kodi (.strm)', url(a='export'), False)
     add('Refrescar nubes', url(a='refresh'), False)
@@ -189,6 +190,85 @@ def export():
                         'elige "Películas" o "Series" y un scraper (TMDb) para obtener carátulas y sinopsis.' % total)
 
 
+def ask(title, default='', hidden=False):
+    return xbmcgui.Dialog().input(title, defaultt=default, type=xbmcgui.INPUT_ALPHANUM,
+                                  option=xbmcgui.ALPHANUM_HIDE_INPUT if hidden else 0).strip()
+
+
+def reset_service():
+    try:
+        api('/reset')
+    except Exception:
+        pass
+
+
+def test_account(aid):
+    notify('Comprobando la cuenta...')
+    try:
+        api('/refresh', acc=aid)
+        xbmcgui.Dialog().ok('MEGA Player', 'Conexión correcta.')
+        return True
+    except Exception as e:
+        xbmcgui.Dialog().ok('MEGA Player', 'No se pudo iniciar sesión:\n%s' % e)
+        return False
+
+
+def add_account_flow():
+    email = ask('Correo de la cuenta MEGA')
+    if not email:
+        return
+    pw = ask('Contraseña', hidden=True)
+    if not pw:
+        return
+    name = ask('Nombre para el menú (opcional)', default=email.split('@')[0])
+    mfa = ask('Código 2FA (déjalo vacío si no lo usas)')
+    aid = add_account(name or email, email, pw, mfa)
+    reset_service()
+    test_account(aid)
+
+
+def edit_account_flow(acc):
+    opts = ['Cambiar nombre', 'Cambiar correo', 'Cambiar contraseña', 'Código 2FA', 'Probar conexión', 'Eliminar cuenta']
+    i = xbmcgui.Dialog().select(acc['name'], opts)
+    if i < 0:
+        return
+    if i == 0:
+        v = ask('Nombre', acc['name'])
+        if v:
+            update_account(acc['id'], name=v)
+    elif i == 1:
+        v = ask('Correo', acc['email'])
+        if v:
+            update_account(acc['id'], email=v)
+    elif i == 2:
+        v = ask('Nueva contraseña', hidden=True)
+        if v:
+            update_account(acc['id'], password=v)
+    elif i == 3:
+        update_account(acc['id'], mfa=ask('Código 2FA (vacío para quitarlo)', acc.get('mfa', '')))
+    elif i == 4:
+        reset_service()
+        return test_account(acc['id'])
+    elif i == 5:
+        if xbmcgui.Dialog().yesno('MEGA Player', '¿Eliminar la cuenta [B]%s[/B] del addon?\n(No se borra nada de MEGA.)' % acc['name']):
+            delete_account(acc['id'])
+    reset_service()
+
+
+def manage_accounts():
+    while True:
+        accs = get_accounts()
+        opts = ['[+] Añadir cuenta'] + ['%s  (%s)' % (a['name'], a['email']) for a in accs]
+        i = xbmcgui.Dialog().select('Cuentas MEGA (%d)' % len(accs), opts)
+        if i < 0:
+            break
+        if i == 0:
+            add_account_flow()
+        else:
+            edit_account_flow(accs[i - 1])
+    xbmc.executebuiltin('Container.Refresh')
+
+
 def refresh():
     for a in get_accounts():
         try:
@@ -217,6 +297,8 @@ def router(params):
             export()
         elif a == 'refresh':
             refresh()
+        elif a == 'accounts':
+            manage_accounts()
         elif a == 'settings':
             ADDON.openSettings()
     except Exception as e:
