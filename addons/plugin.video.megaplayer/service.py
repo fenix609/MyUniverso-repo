@@ -125,7 +125,7 @@ class SettingsMonitor(xbmc.Monitor):
 
 def main():
     monitor = SettingsMonitor()
-    port = int(xbmcaddon.Addon().getSetting('port') or 8765)
+    port = int(xbmcaddon.Addon().getSetting('port') or 48765)
     server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
     server.daemon_threads = True
     threading.Thread(target=server.serve_forever, daemon=True).start()

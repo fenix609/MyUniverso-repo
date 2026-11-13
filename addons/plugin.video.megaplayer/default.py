@@ -7,7 +7,7 @@ import xbmc, xbmcgui, xbmcplugin, xbmcaddon, xbmcvfs
 ADDON = xbmcaddon.Addon()
 HANDLE = int(sys.argv[1])
 BASE = sys.argv[0]
-PORT = int(ADDON.getSetting('port') or 8765)
+PORT = int(ADDON.getSetting('port') or 48765)
 SRV = 'http://127.0.0.1:%d' % PORT
 
 VIDEO = {'.mkv', '.mp4', '.avi', '.mov', '.wmv', '.flv', '.m4v', '.ts', '.m2ts', '.mpg', '.mpeg', '.webm', '.vob', '.iso', '.3gp', '.divx'}

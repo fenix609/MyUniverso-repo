@@ -2,8 +2,12 @@
 """Cliente MEGA mínimo: login (v1/v2, 2FA), listado de nodos y lectura descifrada por rangos."""
 import base64, hashlib, json, re, struct, time
 import requests
-from Crypto.Cipher import AES
-from Crypto.Util import Counter
+try:
+    from Crypto.Cipher import AES
+    from Crypto.Util import Counter
+except ImportError:  # script.module.pycryptodome de Kodi usa el espacio de nombres Cryptodome
+    from Cryptodome.Cipher import AES
+    from Cryptodome.Util import Counter
 
 API = 'https://g.api.mega.co.nz/cs'
 ERRORS = {-2: 'Argumento inválido', -9: 'No existe', -15: 'Sesión caducada',
