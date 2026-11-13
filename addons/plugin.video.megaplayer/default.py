@@ -5,6 +5,9 @@ from urllib.request import urlopen
 import xbmc, xbmcgui, xbmcplugin, xbmcaddon, xbmcvfs
 
 ADDON = xbmcaddon.Addon()
+sys.path.insert(0, os.path.join(ADDON.getAddonInfo('path'), 'resources', 'lib'))
+from accounts import get_accounts
+
 HANDLE = int(sys.argv[1])
 BASE = sys.argv[0]
 PORT = int(ADDON.getSetting('port') or 48765)
@@ -33,8 +36,8 @@ def api(path, **q):
     return data
 
 
-def stream_url(n):
-    return '%s/stream/%s/%s' % (SRV, n['h'], quote(n['name']))
+def stream_url(acc, n):
+    return '%s/stream/%s/%s/%s' % (SRV, acc, n['h'], quote(n['name']))
 
 
 def notify(msg):
@@ -42,58 +45,57 @@ def notify(msg):
 
 
 def add(label, u, folder, li=None):
-    li = li or xbmcgui.ListItem(label)
-    xbmcplugin.addDirectoryItem(HANDLE, u, li, folder)
+    xbmcplugin.addDirectoryItem(HANDLE, u, li or xbmcgui.ListItem(label), folder)
 
 
 def root_menu():
-    add('Mi nube MEGA', url(a='folder', h=''), True)
+    accs = get_accounts()
+    if not accs:
+        xbmcgui.Dialog().ok('MEGA Player', 'Añade al menos una cuenta MEGA en los ajustes del addon.')
+        ADDON.openSettings()
+        return xbmcplugin.endOfDirectory(HANDLE, False)
+    for a in accs:
+        add(a['name'], url(a='folder', acc=a['id'], h=''), True)
     add('Reproducir magnet / torrent (pegar enlace)', url(a='magnet'), False)
     add('Exportar vídeos a la biblioteca de Kodi (.strm)', url(a='export'), False)
-    add('Refrescar nube', url(a='refresh'), False)
+    add('Refrescar nubes', url(a='refresh'), False)
     add('Ajustes', url(a='settings'), False)
     xbmcplugin.endOfDirectory(HANDLE)
 
 
-def folder(h):
-    items = api('/list', parent=h)
+def folder(acc, h):
+    items = api('/list', acc=acc, parent=h)
     thumbs = ADDON.getSetting('thumbs') != 'false'
     n_img = 0
     for n in items:
         e = ext(n['name'])
         if n['t'] != 0:
-            add(n['name'], url(a='folder', h=n['h']), True)
-        elif e in VIDEO:
+            add(n['name'], url(a='folder', acc=acc, h=n['h']), True)
+        elif e in VIDEO or e in AUDIO:
             li = xbmcgui.ListItem(n['name'])
-            li.setInfo('video', {'title': n['name']})
+            li.setInfo('video' if e in VIDEO else 'music', {'title': n['name']})
             li.setProperty('IsPlayable', 'true')
-            add(n['name'], url(a='play', h=n['h'], p=h, name=n['name']), False, li)
-        elif e in AUDIO:
-            li = xbmcgui.ListItem(n['name'])
-            li.setInfo('music', {'title': n['name']})
-            li.setProperty('IsPlayable', 'true')
-            add(n['name'], url(a='play', h=n['h'], p=h, name=n['name']), False, li)
+            add(n['name'], url(a='play', acc=acc, h=n['h'], p=h, name=n['name']), False, li)
         elif e in IMAGE:
             n_img += 1
             li = xbmcgui.ListItem(n['name'])
             li.setInfo('pictures', {'title': n['name']})
             if thumbs:
-                li.setArt({'thumb': stream_url(n), 'icon': stream_url(n)})
-            add(n['name'], stream_url(n), False, li)
+                li.setArt({'thumb': stream_url(acc, n), 'icon': stream_url(acc, n)})
+            add(n['name'], stream_url(acc, n), False, li)
         elif e in ('.torrent', '.magnet'):
-            li = xbmcgui.ListItem('[Torrent] ' + n['name'])
-            add(n['name'], url(a='torrent', h=n['h'], name=n['name']), False, li)
+            add(n['name'], url(a='torrent', acc=acc, h=n['h'], name=n['name']), False,
+                xbmcgui.ListItem('[Torrent] ' + n['name']))
     xbmcplugin.setContent(HANDLE, 'images' if n_img > len(items) / 2 else 'files')
     xbmcplugin.endOfDirectory(HANDLE)
 
 
-def play(h, p, name):
-    path = '%s/stream/%s/%s' % (SRV, h, quote(name))
-    li = xbmcgui.ListItem(path=path)
+def play(acc, h, p, name):
+    li = xbmcgui.ListItem(path='%s/stream/%s/%s/%s' % (SRV, acc, h, quote(name)))
     li.setContentLookup(False)
     try:
         base = os.path.splitext(name)[0].lower()
-        subs = [stream_url(s) for s in api('/list', parent=p)
+        subs = [stream_url(acc, s) for s in api('/list', acc=acc, parent=p)
                 if s['t'] == 0 and ext(s['name']) in SUB and s['name'].lower().startswith(base)]
         if subs:
             li.setSubtitles(subs)
@@ -124,8 +126,8 @@ def play_torrent(uri):
         xbmc.executebuiltin('PlayMedia("%s")' % target)
 
 
-def torrent_node(h, name):
-    u = '%s/stream/%s/%s' % (SRV, h, quote(name))
+def torrent_node(acc, h, name):
+    u = '%s/stream/%s/%s/%s' % (SRV, acc, h, quote(name))
     if ext(name) == '.torrent':
         return play_torrent(u)
     with urlopen(u, timeout=30) as r:
@@ -152,46 +154,69 @@ def export():
     if not dest:
         xbmcgui.Dialog().ok('MEGA Player', 'Elige primero la carpeta destino en Ajustes > Biblioteca.')
         return ADDON.openSettings()
+    accs = get_accounts()
+    if not accs:
+        return notify('No hay cuentas configuradas')
+    multi = len(accs) > 1
+    if multi:
+        c = xbmcgui.Dialog().select('Cuenta a exportar', ['Todas las cuentas'] + [a['name'] for a in accs])
+        if c < 0:
+            return
+        if c > 0:
+            accs = [accs[c - 1]]
     dest = dest.rstrip('/\\')
-    sep = '/'
-    files = [f for f in api('/walk') if ext(f['name']) in VIDEO]
     dp = xbmcgui.DialogProgress()
     dp.create('MEGA Player', 'Exportando...')
-    for i, f in enumerate(files):
-        if dp.iscanceled():
-            break
-        dp.update(int(i * 100 / max(len(files), 1)), f['path'])
-        rel = [safe(x) for x in f['path'].split('/')]
-        rel[-1] = os.path.splitext(rel[-1])[0] + '.strm'
-        full = dest + sep + sep.join(rel)
-        xbmcvfs.mkdirs(full.rsplit(sep, 1)[0] + sep)
-        fh = xbmcvfs.File(full, 'w')
-        fh.write(stream_url(f))
-        fh.close()
+    total = 0
+    for acc in accs:
+        files = [f for f in api('/walk', acc=acc['id']) if ext(f['name']) in VIDEO]
+        for i, f in enumerate(files):
+            if dp.iscanceled():
+                break
+            dp.update(int(i * 100 / max(len(files), 1)), '%s: %s' % (acc['name'], f['path']))
+            rel = [safe(x) for x in f['path'].split('/')]
+            rel[-1] = os.path.splitext(rel[-1])[0] + '.strm'
+            if multi:
+                rel.insert(0, safe(acc['name']))
+            full = dest + '/' + '/'.join(rel)
+            xbmcvfs.mkdirs(full.rsplit('/', 1)[0] + '/')
+            fh = xbmcvfs.File(full, 'w')
+            fh.write(stream_url(acc['id'], f))
+            fh.close()
+            total += 1
     dp.close()
     xbmcgui.Dialog().ok('MEGA Player', 'Exportados %d vídeos.\n\nAñade la carpeta como fuente en Kodi (Vídeos > Archivos > Añadir vídeos), '
-                        'elige "Películas" o "Series" y un scraper (TMDb) para obtener carátulas y sinopsis.' % len(files))
+                        'elige "Películas" o "Series" y un scraper (TMDb) para obtener carátulas y sinopsis.' % total)
+
+
+def refresh():
+    for a in get_accounts():
+        try:
+            api('/refresh', acc=a['id'])
+        except Exception as e:
+            xbmcgui.Dialog().ok('MEGA Player', 'No se pudo actualizar %s:\n%s' % (a['name'], e))
+    notify('Nubes actualizadas')
+    xbmc.executebuiltin('Container.Refresh')
 
 
 def router(params):
     a = params.get('a')
+    acc = params.get('acc', '1')
     try:
         if not a:
             root_menu()
         elif a == 'folder':
-            folder(params.get('h', ''))
+            folder(acc, params.get('h', ''))
         elif a == 'play':
-            play(params['h'], params.get('p', ''), params['name'])
+            play(acc, params['h'], params.get('p', ''), params['name'])
         elif a == 'torrent':
-            torrent_node(params['h'], params['name'])
+            torrent_node(acc, params['h'], params['name'])
         elif a == 'magnet':
             magnet_prompt()
         elif a == 'export':
             export()
         elif a == 'refresh':
-            api('/refresh')
-            notify('Nube actualizada')
-            xbmc.executebuiltin('Container.Refresh')
+            refresh()
         elif a == 'settings':
             ADDON.openSettings()
     except Exception as e:

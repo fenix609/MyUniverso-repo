@@ -1,9 +1,32 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
-  <category label="Cuenta MEGA">
+  <category label="Cuentas MEGA">
+    <setting label="Cuenta 1" type="lsep"/>
+    <setting id="acc1_name" type="text" label="Nombre para el menú" default="Cuenta 1"/>
     <setting id="email" type="text" label="Correo electrónico" default=""/>
     <setting id="password" type="text" option="hidden" label="Contraseña" default=""/>
     <setting id="mfa" type="text" label="Código 2FA (solo si lo tienes activado)" default=""/>
+    <setting label="Cuenta 2" type="lsep"/>
+    <setting id="acc2_name" type="text" label="Nombre para el menú" default="Cuenta 2"/>
+    <setting id="acc2_email" type="text" label="Correo electrónico" default=""/>
+    <setting id="acc2_password" type="text" option="hidden" label="Contraseña" default=""/>
+    <setting id="acc2_mfa" type="text" label="Código 2FA (solo si lo tienes activado)" default=""/>
+    <setting label="Cuenta 3" type="lsep"/>
+    <setting id="acc3_name" type="text" label="Nombre para el menú" default="Cuenta 3"/>
+    <setting id="acc3_email" type="text" label="Correo electrónico" default=""/>
+    <setting id="acc3_password" type="text" option="hidden" label="Contraseña" default=""/>
+    <setting id="acc3_mfa" type="text" label="Código 2FA (solo si lo tienes activado)" default=""/>
+    <setting label="Cuenta 4" type="lsep"/>
+    <setting id="acc4_name" type="text" label="Nombre para el menú" default="Cuenta 4"/>
+    <setting id="acc4_email" type="text" label="Correo electrónico" default=""/>
+    <setting id="acc4_password" type="text" option="hidden" label="Contraseña" default=""/>
+    <setting id="acc4_mfa" type="text" label="Código 2FA (solo si lo tienes activado)" default=""/>
+    <setting label="Cuenta 5" type="lsep"/>
+    <setting id="acc5_name" type="text" label="Nombre para el menú" default="Cuenta 5"/>
+    <setting id="acc5_email" type="text" label="Correo electrónico" default=""/>
+    <setting id="acc5_password" type="text" option="hidden" label="Contraseña" default=""/>
+    <setting id="acc5_mfa" type="text" label="Código 2FA (solo si lo tienes activado)" default=""/>
+    <setting label="General" type="lsep"/>
     <setting id="port" type="number" label="Puerto local del servidor (reiniciar Kodi si cambia)" default="48765"/>
   </category>
   <category label="Torrents">

@@ -6,6 +6,7 @@ import xbmc, xbmcaddon
 
 sys.path.insert(0, os.path.join(xbmcaddon.Addon().getAddonInfo('path'), 'resources', 'lib'))
 from mega import MegaClient, MegaError
+from accounts import get_accounts
 
 mimetypes.add_type('video/x-matroska', '.mkv')
 mimetypes.add_type('video/x-msvideo', '.avi')
@@ -14,22 +15,37 @@ mimetypes.add_type('application/x-bittorrent', '.torrent')
 
 class Manager(object):
     def __init__(self):
-        self.client = None
-        self.lock = threading.Lock()
+        self.clients = {}
+        self.locks = {}
+        self.glock = threading.Lock()
 
-    def get(self):
-        with self.lock:
-            if self.client is None:
-                a = xbmcaddon.Addon()
-                c = MegaClient()
-                c.login(a.getSetting('email'), a.getSetting('password'), a.getSetting('mfa'))
-                c.load_nodes()
-                self.client = c
-            return self.client
+    def _lock(self, i):
+        with self.glock:
+            return self.locks.setdefault(i, threading.Lock())
 
-    def reset(self):
-        with self.lock:
-            self.client = None
+    def get(self, i):
+        i = str(i or '1')
+        with self._lock(i):
+            c = self.clients.get(i)
+            if c is None:
+                acc = next((x for x in get_accounts() if x['id'] == i), None)
+                if not acc:
+                    raise MegaError('La cuenta %s no está configurada' % i)
+                try:
+                    c = MegaClient()
+                    c.login(acc['email'], acc['password'], acc['mfa'])
+                    c.load_nodes()
+                except MegaError as e:
+                    raise MegaError('[%s] %s' % (acc['name'], e))
+                self.clients[i] = c
+            return c
+
+    def reset(self, i=None):
+        with self.glock:
+            if i is None:
+                self.clients.clear()
+            else:
+                self.clients.pop(str(i), None)
 
 
 MANAGER = Manager()
@@ -56,25 +72,33 @@ class Handler(BaseHTTPRequestHandler):
         self._route(False)
 
     def _route(self, head):
+        acc = '1'
         try:
             u = urlparse(self.path)
             q = {k: v[0] for k, v in parse_qs(u.query).items()}
+            acc = q.get('acc', '1')
             if u.path == '/list':
-                self._json(MANAGER.get().list_children(q.get('parent')))
+                self._json(MANAGER.get(acc).list_children(q.get('parent')))
             elif u.path == '/walk':
-                self._json(MANAGER.get().walk(q.get('parent')))
+                self._json(MANAGER.get(acc).walk(q.get('parent')))
             elif u.path == '/refresh':
-                MANAGER.reset()
-                MANAGER.get()
+                MANAGER.reset(acc)
+                MANAGER.get(acc)
                 self._json({'ok': True})
             elif u.path.startswith('/stream/'):
-                self._stream(u.path.split('/')[2], head)
+                parts = u.path.split('/')
+                # /stream/<cuenta>/<handle>/<nombre>   (formato antiguo: /stream/<handle>/<nombre>)
+                if len(parts) >= 5:
+                    self._stream(parts[2], parts[3], head)
+                else:
+                    self._stream('1', parts[2], head)
             else:
                 self._json({'error': 'No encontrado'}, 404)
         except (BrokenPipeError, ConnectionResetError):
             pass
         except MegaError as e:
-            MANAGER.reset() if 'sesión' in str(e).lower() else None
+            if 'sesión' in str(e).lower():
+                MANAGER.reset(acc)
             self._json({'error': str(e)}, 500)
         except Exception as e:
             xbmc.log('[MEGA Player] %r' % e, xbmc.LOGERROR)
@@ -83,8 +107,8 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
-    def _stream(self, h, head):
-        c = MANAGER.get()
+    def _stream(self, acc, h, head):
+        c = MANAGER.get(acc)
         node = c.nodes.get(h)
         if not node or node['t'] != 0:
             return self._json({'error': 'Archivo no encontrado'}, 404)
@@ -126,7 +150,11 @@ class SettingsMonitor(xbmc.Monitor):
 def main():
     monitor = SettingsMonitor()
     port = int(xbmcaddon.Addon().getSetting('port') or 48765)
-    server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
+    try:
+        server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
+    except OSError as e:
+        xbmc.log('[MEGA Player] No se pudo abrir el puerto %d: %r' % (port, e), xbmc.LOGERROR)
+        return
     server.daemon_threads = True
     threading.Thread(target=server.serve_forever, daemon=True).start()
     xbmc.log('[MEGA Player] Servidor en 127.0.0.1:%d' % port, xbmc.LOGINFO)
