@@ -4,8 +4,10 @@
 Menu:  Peliculas / Series  ->  Probar add-on  ->  pruebas de reproduccion.
 Para anadir secciones, crea una funcion y registrala en ROUTES.
 """
+import json
 import re
 import sys
+import threading
 import time
 import traceback
 from urllib.parse import urlencode, parse_qsl, quote
@@ -60,6 +62,18 @@ TESTS = [
     {"title": "12. Recurso de red (SMB / NFS / HTTP)", "method": "network",
      "info": "Escribe una ruta como smb://servidor/carpeta/video.mp4 o nfs://192.168.1.10/video.mkv."},
 ]
+
+# Fuentes de la TDT de Espana (se prueban por orden). TDTChannels se actualiza solo y
+# se basa en las senales oficiales de cada cadena; iptv-org es la copia de respaldo.
+TDT_SOURCES = [
+    "https://www.tdtchannels.com/lists/tv.m3u8",
+    "https://iptv-org.github.io/iptv/countries/es.m3u",
+]
+TDT_CACHE = "special://temp/micentro_tdt_cache.json"
+TDT_RESULTS = "special://temp/micentro_tdt_results.json"
+TDT_CACHE_HOURS = 6
+CHECK_THREADS = 8
+CHECK_TIMEOUT = 8
 
 # Lista M3U de ejemplo (formato habitual de listas de TV en directo)
 SAMPLE_M3U = """#EXTM3U
@@ -128,6 +142,7 @@ def add_action(label, **params):
 def main_menu(params):
     add_folder("Películas", action="movies")
     add_folder("Series", action="series")
+    add_folder("TV en directo", action="tv")
     xbmcplugin.endOfDirectory(HANDLE)
 
 
@@ -142,6 +157,16 @@ def series_menu(params):
     xbmcplugin.setPluginCategory(HANDLE, "Series")
     xbmcplugin.setContent(HANDLE, "tvshows")
     add_folder("Probar add-on", action="test", section="Series")
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def tv_menu(params):
+    xbmcplugin.setPluginCategory(HANDLE, "TV en directo")
+    xbmcplugin.setContent(HANDLE, "videos")
+    add_folder("TDT (canales de España)", action="tdt")
+    add_folder("Lista M3U de ejemplo", action="m3u")
+    add_folder("Abrir mi propia lista M3U (URL o archivo)", action="m3u_ask")
+    add_folder("Probar add-on", action="test", section="TV en directo")
     xbmcplugin.endOfDirectory(HANDLE)
 
 
@@ -247,18 +272,46 @@ def play(params):
 # ---------------------------------------------------------------------------
 # Listas M3U (TV en directo)
 # ---------------------------------------------------------------------------
+HEADER_OPTS = {"http-user-agent": "User-Agent", "http-referrer": "Referer",
+               "http-referer": "Referer", "http-origin": "Origin"}
+
+
 def parse_m3u(text):
-    entries, name, logo = [], None, ""
+    """Devuelve [{name, url, logo, group, headers}]; entiende #EXTINF y #EXTVLCOPT."""
+    entries, meta = [], None
+
+    def new_meta():
+        return {"name": None, "logo": "", "group": "", "headers": {}}
+
     for line in text.splitlines():
         line = line.strip()
         if line.startswith("#EXTINF"):
-            name = line.split(",", 1)[1].strip() if "," in line else "Sin nombre"
-            match = re.search(r'tvg-logo="([^"]*)"', line)
-            logo = match.group(1) if match else ""
+            meta = new_meta()
+            meta["name"] = line.split(",", 1)[1].strip() if "," in line else "Sin nombre"
+            logo = re.search(r'tvg-logo="([^"]*)"', line)
+            group = re.search(r'group-title="([^"]*)"', line)
+            meta["logo"] = logo.group(1) if logo else ""
+            meta["group"] = group.group(1).strip() if group else ""
+        elif line.upper().startswith("#EXTVLCOPT:"):
+            if meta is None:
+                meta = new_meta()
+            key, _, value = line.split(":", 1)[1].partition("=")
+            header = HEADER_OPTS.get(key.strip().lower())
+            if header and value.strip():
+                meta["headers"][header] = value.strip()
         elif line and not line.startswith("#"):
-            entries.append({"name": name or line, "url": line, "logo": logo})
-            name, logo = None, ""
+            meta = meta or new_meta()
+            entries.append({"name": meta["name"] or line, "url": line, "logo": meta["logo"],
+                            "group": meta["group"], "headers": meta["headers"]})
+            meta = None
     return entries
+
+
+def with_headers(url, headers):
+    """Anade cabeceras HTTP al enlace con el formato de Kodi: url|Cabecera=valor&..."""
+    if not headers:
+        return url
+    return url + "|" + urlencode(headers, quote_via=quote)
 
 
 def load_text(source):
@@ -283,7 +336,8 @@ def list_m3u(source):
     if not entries:
         notify("La lista no contiene canales", xbmcgui.NOTIFICATION_WARNING)
     for entry in entries:
-        add_playable(entry["name"], art=entry["logo"], action="play_url", url=entry["url"])
+        add_playable(entry["name"], art=entry["logo"], action="play_url",
+                     url=with_headers(entry["url"], entry["headers"]))
     xbmcplugin.endOfDirectory(HANDLE)
 
 
@@ -306,6 +360,208 @@ def play_url(params):
         xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
         return
     xbmcplugin.setResolvedUrl(HANDLE, True, xbmcgui.ListItem(path=url))
+
+
+# ---------------------------------------------------------------------------
+# TDT de Espana
+# ---------------------------------------------------------------------------
+def read_text(path):
+    handle = xbmcvfs.File(path)
+    data = handle.read()
+    handle.close()
+    return data.decode("utf-8", "replace") if isinstance(data, (bytes, bytearray)) else data
+
+
+def write_text(path, text):
+    handle = xbmcvfs.File(path, "w")
+    handle.write(text)
+    handle.close()
+
+
+def read_json(path):
+    try:
+        data = json.loads(read_text(path))
+        return data if isinstance(data, dict) else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def write_json(path, data):
+    try:
+        write_text(path, json.dumps(data))
+    except Exception as error:  # noqa: BLE001
+        log("No se pudo guardar {0}: {1}".format(path, error))
+
+
+def get_tdt_entries(refresh=False):
+    """Descarga (o lee de la cache) la lista de la TDT y devuelve solo enlaces http(s)."""
+    cache = read_json(TDT_CACHE)
+    now = time.time()
+    text = None
+    if cache and not refresh and now - cache.get("time", 0) < TDT_CACHE_HOURS * 3600:
+        text = cache.get("text")
+    if not text:
+        for source in TDT_SOURCES:
+            try:
+                candidate = load_text(source)
+                if "#EXTINF" in candidate:
+                    text = candidate
+                    log("TDT: lista descargada de {0}".format(source))
+                    write_json(TDT_CACHE, {"time": now, "source": source, "text": text})
+                    break
+                log("TDT: {0} no devolvio una lista M3U valida".format(source))
+            except Exception as error:  # noqa: BLE001
+                log("TDT: fallo al descargar {0}: {1}".format(source, error))
+        if not text and cache and cache.get("text"):
+            text = cache["text"]
+            notify("Sin conexión con la lista: usando la última copia guardada",
+                   xbmcgui.NOTIFICATION_WARNING)
+    if not text:
+        notify("No se pudo descargar la lista de la TDT", xbmcgui.NOTIFICATION_ERROR)
+        return []
+    entries = [e for e in parse_m3u(text) if e["url"].lower().startswith(("http://", "https://"))]
+    for entry in entries:
+        entry["group"] = entry["group"] or "Otros"
+    return entries
+
+
+def load_results():
+    data = read_json(TDT_RESULTS)
+    return data.get("results", {}) if data else {}
+
+
+def check_stream(url, headers=None, timeout=CHECK_TIMEOUT):
+    """Comprueba que el enlace responde y, si es .m3u8, que devuelve una lista HLS valida."""
+    import ssl
+    request_headers = {"User-Agent": "Mozilla/5.0 (Kodi MiCentro)", "Range": "bytes=0-2047"}
+    request_headers.update(headers or {})
+    last_error = None
+    for context in (None, ssl._create_unverified_context()):
+        try:
+            response = urlopen(Request(url, headers=request_headers), timeout=timeout, context=context)
+            code = response.getcode()
+            body = response.read(2048)
+            kind = (response.headers.get("Content-Type") or "").lower()
+            response.close()
+            if code not in (200, 206):
+                return False, "HTTP {0}".format(code)
+            if (".m3u8" in url.lower() or "mpegurl" in kind) and b"#EXTM3U" not in body:
+                return False, "no devuelve una lista HLS válida"
+            return True, "OK"
+        except ssl.SSLError as error:
+            last_error = error
+            continue
+        except Exception as error:  # noqa: BLE001
+            reason = getattr(error, "reason", None) or error
+            if "CERTIFICATE" in str(reason).upper():
+                last_error = error
+                continue
+            return False, str(reason)[:80]
+    return False, str(last_error)[:80]
+
+
+def run_checks(entries, progress=None):
+    """Comprueba varios canales a la vez. Devuelve {url: {ok, msg}}."""
+    pending, results, lock, stop = list(entries), {}, threading.Lock(), threading.Event()
+
+    def worker():
+        while not stop.is_set():
+            with lock:
+                if not pending:
+                    return
+                entry = pending.pop()
+            ok, message = check_stream(entry["url"], entry["headers"])
+            with lock:
+                results[entry["url"]] = {"ok": ok, "msg": message}
+
+    threads = [threading.Thread(target=worker) for _ in range(CHECK_THREADS)]
+    for thread in threads:
+        thread.daemon = True
+        thread.start()
+    total = max(len(entries), 1)
+    while any(thread.is_alive() for thread in threads):
+        time.sleep(0.2)
+        if progress is not None:
+            with lock:
+                done = len(results)
+            progress.update(int(done * 100 / total), "Canales comprobados: {0} de {1}".format(done, total))
+            if progress.iscanceled():
+                stop.set()
+                break
+    return results
+
+
+def tdt_menu(params):
+    xbmcplugin.setPluginCategory(HANDLE, "TDT")
+    xbmcplugin.setContent(HANDLE, "videos")
+    entries = get_tdt_entries(refresh=params.get("refresh") == "1")
+    if not entries:
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    results = load_results()
+    working = sum(1 for e in entries if results.get(e["url"], {}).get("ok"))
+    add_folder("Todos los canales ({0})".format(len(entries)), action="tdt_list", group="")
+    counts = {}
+    for entry in entries:
+        counts[entry["group"]] = counts.get(entry["group"], 0) + 1
+    for group in sorted(counts, key=lambda g: (g == "Otros", g.lower())):
+        add_folder("{0} ({1})".format(group, counts[group]), action="tdt_list", group=group)
+    if results:
+        add_folder("Solo canales que funcionan ({0})".format(working), action="tdt_list",
+                   group="", only_ok="1")
+    add_action("» Comprobar todos los canales", action="tdt_check")
+    add_folder("» Actualizar la lista de canales", action="tdt", refresh="1")
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def tdt_list(params):
+    group = params.get("group", "")
+    only_ok = params.get("only_ok") == "1"
+    xbmcplugin.setPluginCategory(HANDLE, group or "TDT")
+    xbmcplugin.setContent(HANDLE, "videos")
+    results = load_results()
+    for entry in get_tdt_entries():
+        if group and entry["group"] != group:
+            continue
+        status = results.get(entry["url"])
+        if only_ok and not (status and status["ok"]):
+            continue
+        label = entry["name"]
+        if status:
+            label = ("[COLOR lime][OK][/COLOR] " if status["ok"] else "[COLOR red][X][/COLOR] ") + label
+        add_playable(label, status["msg"] if status else "", art=entry["logo"],
+                     action="play_url", url=with_headers(entry["url"], entry["headers"]))
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def tdt_check(params):
+    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+    entries = get_tdt_entries()
+    if not entries:
+        return
+    progress = xbmcgui.DialogProgress()
+    progress.create("Comprobando canales de la TDT", "Preparando...")
+    log("TDT: comprobando {0} canales".format(len(entries)))
+    results = run_checks(entries, progress)
+    progress.close()
+    write_json(TDT_RESULTS, {"time": time.time(), "results": results})
+
+    names = {e["url"]: e["name"] for e in entries}
+    good = [names[u] for u, r in results.items() if r["ok"]]
+    bad = ["{0}: {1}".format(names[u], r["msg"]) for u, r in results.items() if not r["ok"]]
+    skipped = len(entries) - len(results)
+    lines = ["Canales que responden: {0} de {1}".format(len(good), len(entries))]
+    if skipped:
+        lines.append("Sin comprobar (cancelado): {0}".format(skipped))
+    lines.append("")
+    lines.append("--- NO RESPONDEN ({0}) ---".format(len(bad)))
+    lines.extend(sorted(bad))
+    lines.append("")
+    lines.append("Nota: que un canal responda no garantiza que se vea bien, y algunos")
+    lines.append("pueden fallar a ratos o solo funcionar en España.")
+    log("TDT: {0} OK, {1} fallan".format(len(good), len(bad)))
+    xbmcgui.Dialog().textviewer("Resultado: canales de la TDT", "\n".join(lines))
+    xbmc.executebuiltin("Container.Refresh")
 
 
 # ---------------------------------------------------------------------------
@@ -357,6 +613,10 @@ ROUTES = {
     None: main_menu,
     "movies": movies_menu,
     "series": series_menu,
+    "tv": tv_menu,
+    "tdt": tdt_menu,
+    "tdt_list": tdt_list,
+    "tdt_check": tdt_check,
     "test": test_menu,
     "play": play,
     "check_all": check_all,
