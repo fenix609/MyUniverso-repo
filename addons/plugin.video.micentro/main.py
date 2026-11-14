@@ -7,6 +7,7 @@ Para anadir secciones, crea una funcion y registrala en ROUTES.
 import re
 import sys
 import time
+import traceback
 from urllib.parse import urlencode, parse_qsl, quote
 from urllib.request import Request, urlopen
 
@@ -72,6 +73,11 @@ https://test-streams.mux.dev/test_001/stream.m3u8
 # ---------------------------------------------------------------------------
 # Utilidades
 # ---------------------------------------------------------------------------
+def log(message, level=None):
+    """Escribe en kodi.log con el prefijo [Mi Centro] (visible con el log en modo normal)."""
+    xbmc.log("[Mi Centro] {0}".format(message), xbmc.LOGINFO if level is None else level)
+
+
 def build_url(**params):
     return "{0}?{1}".format(BASE_URL, urlencode(params))
 
@@ -151,7 +157,7 @@ def test_menu(params):
 # ---------------------------------------------------------------------------
 # Reproduccion
 # ---------------------------------------------------------------------------
-def play(params):
+def _play(params):
     try:
         test = TESTS[int(params.get("id", -1))]
     except (ValueError, IndexError):
@@ -167,6 +173,7 @@ def play(params):
 
     method = test["method"]
     url = test.get("url", "")
+    log("play: {0} | metodo={1} | url={2}".format(test["title"], method, url))
 
     if method == "browse_local":
         url = xbmcgui.Dialog().browseSingle(1, "Elige un video", "video")
@@ -174,6 +181,7 @@ def play(params):
         url = xbmcgui.Dialog().input("Ruta del video (smb://, nfs://, http://...)",
                                      defaultt="smb://servidor/carpeta/video.mp4")
     if not url:
+        log("play: sin URL (cancelado por el usuario)")
         xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
         return
 
@@ -216,6 +224,15 @@ def play(params):
     elif method == "builtin":
         xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
         xbmc.executebuiltin("PlayMedia({0})".format(url))
+
+
+def play(params):
+    try:
+        _play(params)
+    except Exception as error:  # noqa: BLE001
+        log("ERROR en play: {0}\n{1}".format(error, traceback.format_exc()), xbmc.LOGERROR)
+        notify("Error al preparar la reproducción: {0}".format(error), xbmcgui.NOTIFICATION_ERROR)
+        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
 
 
 # ---------------------------------------------------------------------------
@@ -275,6 +292,7 @@ def m3u_ask(params):
 
 def play_url(params):
     url = params.get("url", "")
+    log("play_url: {0}".format(url))
     if not url:
         xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
         return
@@ -294,6 +312,7 @@ def check_url(url, timeout=10):
         response.close()
         return True, "OK (HTTP {0}, {1} ms)".format(code, int((time.time() - start) * 1000))
     except Exception as error:  # noqa: BLE001
+        log("check_url FALLO {0}: {1}".format(url, error))
         return False, "ERROR: {0}".format(error)
 
 
@@ -340,6 +359,7 @@ ROUTES = {
 
 def router(paramstring):
     params = dict(parse_qsl(paramstring))
+    log("ruta: {0}".format(params))
     ROUTES.get(params.get("action"), main_menu)(params)
 
 
