@@ -5,6 +5,7 @@ Menu:  Peliculas / Series  ->  Probar add-on  ->  pruebas de reproduccion.
 Para anadir secciones, crea una funcion y registrala en ROUTES.
 """
 import json
+from collections import Counter
 import re
 import sys
 import threading
@@ -430,10 +431,12 @@ def load_results():
     return data.get("results", {}) if data else {}
 
 
-def check_stream(url, headers=None, timeout=CHECK_TIMEOUT):
+def check_stream(url, headers=None, timeout=CHECK_TIMEOUT, use_range=True):
     """Comprueba que el enlace responde y, si es .m3u8, que devuelve una lista HLS valida."""
     import ssl
-    request_headers = {"User-Agent": "Mozilla/5.0 (Kodi MiCentro)", "Range": "bytes=0-2047"}
+    request_headers = {"User-Agent": "Mozilla/5.0 (Kodi MiCentro)"}
+    if use_range:
+        request_headers["Range"] = "bytes=0-2047"
     request_headers.update(headers or {})
     last_error = None
     for context in (None, ssl._create_unverified_context()):
@@ -452,6 +455,9 @@ def check_stream(url, headers=None, timeout=CHECK_TIMEOUT):
             last_error = error
             continue
         except Exception as error:  # noqa: BLE001
+            code = getattr(error, "code", None)
+            if code:
+                return False, "HTTP {0}".format(code)
             reason = getattr(error, "reason", None) or error
             if "CERTIFICATE" in str(reason).upper():
                 last_error = error
@@ -460,9 +466,10 @@ def check_stream(url, headers=None, timeout=CHECK_TIMEOUT):
     return False, str(last_error)[:80]
 
 
-def run_checks(entries, progress=None):
-    """Comprueba varios canales a la vez. Devuelve {url: {ok, msg}}."""
-    pending, results, lock, stop = list(entries), {}, threading.Lock(), threading.Event()
+def run_checks(entries, progress=None, timeout=CHECK_TIMEOUT, use_range=True, label="Canales comprobados"):
+    """Comprueba varios canales a la vez. Devuelve ({url: {ok, msg}}, cancelado)."""
+    unique = list({e["url"]: e for e in entries}.values())   # varios canales pueden compartir URL
+    pending, results, lock, stop = list(unique), {}, threading.Lock(), threading.Event()
 
     def worker():
         while not stop.is_set():
@@ -470,7 +477,7 @@ def run_checks(entries, progress=None):
                 if not pending:
                     return
                 entry = pending.pop()
-            ok, message = check_stream(entry["url"], entry["headers"])
+            ok, message = check_stream(entry["url"], entry["headers"], timeout, use_range)
             with lock:
                 results[entry["url"]] = {"ok": ok, "msg": message}
 
@@ -478,17 +485,19 @@ def run_checks(entries, progress=None):
     for thread in threads:
         thread.daemon = True
         thread.start()
-    total = max(len(entries), 1)
+    total = max(len(unique), 1)
+    canceled = False
     while any(thread.is_alive() for thread in threads):
         time.sleep(0.2)
         if progress is not None:
             with lock:
                 done = len(results)
-            progress.update(int(done * 100 / total), "Canales comprobados: {0} de {1}".format(done, total))
+            progress.update(int(done * 100 / total), "{0}: {1} de {2}".format(label, done, total))
             if progress.iscanceled():
                 stop.set()
+                canceled = True
                 break
-    return results
+    return results, canceled
 
 
 def tdt_menu(params):
@@ -510,6 +519,8 @@ def tdt_menu(params):
         add_folder("Solo canales que funcionan ({0})".format(working), action="tdt_list",
                    group="", only_ok="1")
     add_action("» Comprobar todos los canales", action="tdt_check")
+    if results:
+        add_action("» Ver los canales que fallan", action="tdt_failures")
     add_folder("» Actualizar la lista de canales", action="tdt", refresh="1")
     xbmcplugin.endOfDirectory(HANDLE)
 
@@ -534,6 +545,23 @@ def tdt_list(params):
     xbmcplugin.endOfDirectory(HANDLE)
 
 
+def failure_report(entries, results, canceled=False):
+    checked = [e for e in entries if e["url"] in results]
+    good = [e for e in checked if results[e["url"]]["ok"]]
+    bad = [(e["name"], results[e["url"]]["msg"]) for e in checked if not results[e["url"]]["ok"]]
+    lines = ["Canales que responden: {0} de {1}".format(len(good), len(entries))]
+    if canceled or len(checked) < len(entries):
+        lines.append("Sin comprobar (cancelado): {0}".format(len(entries) - len(checked)))
+    if bad:
+        lines += ["", "--- MOTIVOS ---"]
+        lines += ["{0} canales: {1}".format(n, m) for m, n in Counter(m for _, m in bad).most_common()]
+        lines += ["", "--- NO RESPONDEN ({0}) ---".format(len(bad))]
+        lines += ["{0}: {1}".format(n, m) for n, m in sorted(bad)]
+    lines += ["", "Nota: que un canal responda no garantiza que se vea bien, y algunos",
+              "pueden fallar a ratos o solo funcionar en España."]
+    return "\n".join(lines), bad
+
+
 def tdt_check(params):
     xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
     entries = get_tdt_entries()
@@ -542,26 +570,37 @@ def tdt_check(params):
     progress = xbmcgui.DialogProgress()
     progress.create("Comprobando canales de la TDT", "Preparando...")
     log("TDT: comprobando {0} canales".format(len(entries)))
-    results = run_checks(entries, progress)
+    results, canceled = run_checks(entries, progress)
+
+    # Segunda pasada solo con los que fallan: mas tiempo y sin cabecera Range
+    failed = [e for e in entries if e["url"] in results and not results[e["url"]]["ok"]]
+    if failed and not canceled:
+        log("TDT: reintentando {0} canales".format(len(failed)))
+        retry, canceled = run_checks(failed, progress, timeout=15, use_range=False,
+                                     label="Reintentando canales")
+        for url, result in retry.items():
+            results[url] = result if result["ok"] else {"ok": False, "msg": result["msg"] + " (2 intentos)"}
     progress.close()
     write_json(TDT_RESULTS, {"time": time.time(), "results": results})
 
-    names = {e["url"]: e["name"] for e in entries}
-    good = [names[u] for u, r in results.items() if r["ok"]]
-    bad = ["{0}: {1}".format(names[u], r["msg"]) for u, r in results.items() if not r["ok"]]
-    skipped = len(entries) - len(results)
-    lines = ["Canales que responden: {0} de {1}".format(len(good), len(entries))]
-    if skipped:
-        lines.append("Sin comprobar (cancelado): {0}".format(skipped))
-    lines.append("")
-    lines.append("--- NO RESPONDEN ({0}) ---".format(len(bad)))
-    lines.extend(sorted(bad))
-    lines.append("")
-    lines.append("Nota: que un canal responda no garantiza que se vea bien, y algunos")
-    lines.append("pueden fallar a ratos o solo funcionar en España.")
-    log("TDT: {0} OK, {1} fallan".format(len(good), len(bad)))
-    xbmcgui.Dialog().textviewer("Resultado: canales de la TDT", "\n".join(lines))
+    report, bad = failure_report(entries, results, canceled)
+    for entry in entries:
+        result = results.get(entry["url"])
+        if result and not result["ok"]:
+            log("TDT FALLO: {0} | {1} | {2}".format(entry["name"], result["msg"], entry["url"]))
+    log("TDT: {0} OK, {1} fallan".format(len(entries) - len(bad), len(bad)))
+    xbmcgui.Dialog().textviewer("Resultado: canales de la TDT", report)
     xbmc.executebuiltin("Container.Refresh")
+
+
+def tdt_failures(params):
+    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+    results = load_results()
+    if not results:
+        notify("Aún no has comprobado los canales", xbmcgui.NOTIFICATION_WARNING)
+        return
+    report, _ = failure_report(get_tdt_entries(), results)
+    xbmcgui.Dialog().textviewer("Canales que fallan", report)
 
 
 # ---------------------------------------------------------------------------
@@ -617,6 +656,7 @@ ROUTES = {
     "tdt": tdt_menu,
     "tdt_list": tdt_list,
     "tdt_check": tdt_check,
+    "tdt_failures": tdt_failures,
     "test": test_menu,
     "play": play,
     "check_all": check_all,
