@@ -24,24 +24,26 @@ ADDON_NAME = "Mi Centro"
 # Enlaces de prueba. Todos son videos de muestra publicos (Big Buck Bunny,
 # Sintel...). "method" indica COMO se reproduce cada uno.
 # ---------------------------------------------------------------------------
-BBB_MP4 = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+HTTP_MP4 = "http://download.blender.org/durian/trailer/sintel_trailer-480p.mp4"
 SINTEL_MP4 = "https://download.blender.org/durian/trailer/sintel_trailer-480p.mp4"
+HTTPS_WEBM = "https://test-videos.co.uk/vids/bigbuckbunny/webm/vp9/360/Big_Buck_Bunny_360_10s_1MB.webm"
+NET_EXAMPLE = "smb://servidor/carpeta/video.mp4"
 BBB_HLS = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
 BBB_DASH = "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd"
 YOUTUBE_ID = "aqz-KE-bpKQ"  # Big Buck Bunny
 
 TESTS = [
-    {"title": "1. MP4 directo (HTTP)", "method": "resolve", "url": BBB_MP4,
+    {"title": "1. MP4 directo (HTTP)", "method": "resolve", "url": HTTP_MP4,
      "info": "Enlace directo a un .mp4 por HTTP."},
-    {"title": "2. MP4 directo (HTTPS)", "method": "resolve", "url": SINTEL_MP4,
-     "info": "Enlace directo a un .mp4 por HTTPS."},
+    {"title": "2. Video directo WebM (HTTPS)", "method": "resolve", "url": HTTPS_WEBM,
+     "info": "Enlace directo a un .webm por HTTPS."},
     {"title": "3. HLS (.m3u8) con el reproductor nativo", "method": "resolve", "url": BBB_HLS,
      "info": "Streaming HLS reproducido por FFmpeg de Kodi."},
     {"title": "4. HLS (.m3u8) con inputstream.adaptive", "method": "adaptive_hls", "url": BBB_HLS,
      "needs": "inputstream.adaptive", "info": "HLS con calidad adaptativa."},
     {"title": "5. DASH (.mpd) con inputstream.adaptive", "method": "adaptive_mpd", "url": BBB_DASH,
      "needs": "inputstream.adaptive", "info": "Streaming DASH."},
-    {"title": "6. Enlace con cabeceras (User-Agent / Referer)", "method": "headers", "url": BBB_MP4,
+    {"title": "6. Enlace con cabeceras (User-Agent / Referer)", "method": "headers", "url": SINTEL_MP4,
      "info": "Formato url|Cabecera=valor, habitual en add-ons de streaming."},
     {"title": "7. Reproducir con xbmc.Player().play()", "method": "player", "url": SINTEL_MP4,
      "info": "Lanza el reproductor directamente desde el codigo."},
@@ -51,7 +53,7 @@ TESTS = [
      "url": "plugin://plugin.video.youtube/play/?video_id=" + YOUTUBE_ID,
      "needs": "plugin.video.youtube", "check": False,
      "info": "Requiere tener instalado el add-on oficial de YouTube."},
-    {"title": "10. Video con subtítulos externos (.srt)", "method": "subtitles", "url": BBB_MP4,
+    {"title": "10. Video con subtítulos externos (.srt)", "method": "subtitles", "url": SINTEL_MP4,
      "info": "Crea un .srt de ejemplo y lo carga junto al video. Activa los subtítulos en el reproductor."},
     {"title": "11. Archivo local (elige uno del dispositivo)", "method": "browse_local",
      "info": "Abre el explorador de Kodi para elegir un video de la memoria, USB o tarjeta SD."},
@@ -150,7 +152,11 @@ def test_menu(params):
     add_folder("» Lista M3U de ejemplo (TV en directo)", action="m3u")
     add_folder("» Abrir mi propia lista M3U (URL o archivo)", action="m3u_ask")
     for index, test in enumerate(TESTS):
-        add_playable(test["title"], test.get("info", ""), action="play", id=index)
+        if test["method"] in ("player", "builtin"):
+            # Estas pruebas lanzan el reproductor por su cuenta: no deben ser "reproducibles"
+            add_action(test["title"], action="play", id=index)
+        else:
+            add_playable(test["title"], test.get("info", ""), action="play", id=index)
     xbmcplugin.endOfDirectory(HANDLE)
 
 
@@ -179,9 +185,12 @@ def _play(params):
         url = xbmcgui.Dialog().browseSingle(1, "Elige un video", "video")
     elif method == "network":
         url = xbmcgui.Dialog().input("Ruta del video (smb://, nfs://, http://...)",
-                                     defaultt="smb://servidor/carpeta/video.mp4")
+                                     defaultt=NET_EXAMPLE)
+    if method == "network" and url == NET_EXAMPLE:
+        notify("Escribe la ruta real de tu servidor (el ejemplo no existe)", xbmcgui.NOTIFICATION_WARNING)
+        url = ""
     if not url:
-        log("play: sin URL (cancelado por el usuario)")
+        log("play: sin URL (cancelado o ruta de ejemplo)")
         xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
         return
 
@@ -218,11 +227,11 @@ def _play(params):
         xbmcplugin.setResolvedUrl(HANDLE, True, item)
 
     elif method == "player":
-        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
         xbmc.Player().play(url, item)
 
     elif method == "builtin":
-        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
         xbmc.executebuiltin("PlayMedia({0})".format(url))
 
 
