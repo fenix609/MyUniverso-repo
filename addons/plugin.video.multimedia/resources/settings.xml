@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings version="1">
+    <section id="plugin.video.multimedia">
+        <category id="general" label="General">
+            <group id="1">
+                <setting id="catalog_url" type="string" label="URL del catálogo (JSON)">
+                    <level>0</level>
+                    <default>https://raw.githubusercontent.com/fenix609/MyUniverso-repo/main/content/catalog.json</default>
+                    <control type="edit" format="string"><heading>URL del catálogo</heading></control>
+                </setting>
+                <setting id="show_youtube" type="boolean" label="Mostrar menú de YouTube">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="show_open_link" type="boolean" label="Mostrar 'Reproducir enlace'">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+            </group>
+        </category>
+    </section>
+</settings>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="plugin.video.multimedia" name="multimedia" version="1.1.0" provider-name="fenix609">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="plugin.video.youtube" version="6.0.0"/>
+        <import addon="inputstream.adaptive" optional="true"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video audio image</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="es_ES">multimedia</summary>
+        <description lang="es_ES">Reproduce vídeo, música, fotos, listas M3U y YouTube. El catálogo se carga desde GitHub (fenix609/MyUniverso-repo).</description>
+        <news>1.1.0: soporte de música, fotos, YouTube, listas M3U, subcategorías y reproducción de enlaces.</news>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
