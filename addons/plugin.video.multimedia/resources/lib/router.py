@@ -68,16 +68,35 @@ def add_media(entry):
 
 
 def list_root():
-    root = catalog.load_root()
-    for idx, cat in enumerate(root.get("categories", [])):
-        add_folder(cat.get("name", "Sin nombre"), url_for(action="folder", path=str(idx)), cat)
-    if utils.get_bool("show_youtube") and utils.has_youtube():
-        add_folder("YouTube", media.YT_PLUGIN)
+    for sec in catalog.load_menu():
+        add_folder(sec["name"], url_for(action="section", id=sec["id"]), sec)
     if utils.get_bool("show_open_link"):
-        item = xbmcgui.ListItem(label="Reproducir enlace...")
+        item = xbmcgui.ListItem(label="Enlace")
         xbmcplugin.addDirectoryItem(HANDLE, url_for(action="open_link"), item, False)
     xbmcplugin.setContent(HANDLE, "files")
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+def open_section(section_id):
+    sec = next((x for x in catalog.load_menu() if x["id"] == section_id), None)
+    if sec is None:
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    pin = utils.get_setting("pin_privado")
+    if sec["private"] and pin:
+        typed = xbmcgui.Dialog().input("PIN", type=xbmcgui.INPUT_NUMERIC,
+                                       option=xbmcgui.ALPHANUM_HIDE_INPUT)
+        if typed != pin:
+            if typed:
+                utils.notify("PIN incorrecto", error=True)
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+            return
+    idx = catalog.find_category(catalog.load_root(), sec["catalog"])
+    if idx < 0:
+        utils.notify("Sección sin contenido todavía")
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    list_folder(str(idx))
 
 
 def list_folder(path_str):
@@ -102,12 +121,16 @@ def list_folder(path_str):
     xbmcplugin.endOfDirectory(HANDLE)
 
 
-def run(argv):
+def run(argv, menu_url=None):
     global HANDLE, BASE
     BASE, HANDLE = argv[0], int(argv[1])
+    if menu_url:
+        catalog.MENU_URL = menu_url
     params = dict(parse_qsl(argv[2][1:]))
     action = params.get("action")
-    if action == "folder":
+    if action == "section":
+        open_section(params.get("id", ""))
+    elif action == "folder":
         list_folder(params.get("path", ""))
     elif action == "play":
         player.resolve(HANDLE, params["url"], params.get("title", ""), params.get("kind", "video"))

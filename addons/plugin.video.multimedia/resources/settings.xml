@@ -8,12 +8,12 @@
                     <default>https://raw.githubusercontent.com/fenix609/MyUniverso-repo/main/content/catalog.json</default>
                     <control type="edit" format="string"><heading>URL del catálogo</heading></control>
                 </setting>
-                <setting id="show_youtube" type="boolean" label="Mostrar menú de YouTube">
+                <setting id="pin_privado" type="string" label="PIN de la sección Privado (vacío = sin PIN)">
                     <level>0</level>
-                    <default>true</default>
-                    <control type="toggle"/>
+                    <default></default>
+                    <control type="edit" format="string"><heading>PIN numérico</heading></control>
                 </setting>
-                <setting id="show_open_link" type="boolean" label="Mostrar 'Reproducir enlace'">
+                <setting id="show_open_link" type="boolean" label="Mostrar menú 'Enlace'">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle"/>

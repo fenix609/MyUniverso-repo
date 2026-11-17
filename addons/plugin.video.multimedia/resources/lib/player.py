@@ -28,7 +28,7 @@ def resolve(handle, url, title="", kind="video"):
 
 def open_link():
     """Pide un enlace (YouTube, vídeo, audio o imagen) y lo reproduce/muestra."""
-    link = xbmcgui.Dialog().input("Pega un enlace o ID de YouTube", type=xbmcgui.INPUT_ALPHANUM)
+    link = xbmcgui.Dialog().input("Pega el enlace", type=xbmcgui.INPUT_ALPHANUM)
     if not link:
         return
     entry = {"url": link.strip()}
