@@ -89,3 +89,23 @@ def find_category(root, name):
         if cat.get("name", "").strip().lower() == wanted:
             return idx
     return -1
+
+
+def code_base():
+    """Carpeta 'Código' de GitHub (la misma de menú.xml)."""
+    return MENU_URL.rsplit("/", 1)[0] + "/" if MENU_URL else ""
+
+
+def load_code_text(name):
+    """Texto de un archivo de la carpeta Código desde GitHub; si falla, copia local del addon."""
+    base = code_base()
+    if base:
+        try:
+            return fetch_text(base + quote(name))
+        except Exception as exc:
+            utils.log("'{}' no disponible en GitHub: {}".format(name, exc))
+    try:
+        return read_local(name)
+    except Exception as exc:
+        utils.log("'{}' local no disponible: {}".format(name, exc), error=True)
+        return ""

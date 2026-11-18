@@ -1,0 +1,50 @@
+{
+  "categories": [
+    {
+      "name": "Televisión",
+      "items": []
+    },
+    {
+      "name": "Películas y Series",
+      "items": [
+        {
+          "title": "Big Buck Bunny (MP4)",
+          "type": "video",
+          "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "plot": "Vídeo de prueba."
+        }
+      ]
+    },
+    {
+      "name": "Entretenimiento",
+      "categories": [
+        {
+          "name": "Música",
+          "items": [
+            {
+              "title": "SoundHelix Song 1",
+              "type": "audio",
+              "artist": "SoundHelix",
+              "album": "Ejemplos",
+              "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+            }
+          ]
+        },
+        {
+          "name": "Fotos",
+          "items": [
+            {
+              "title": "Foto de prueba",
+              "type": "image",
+              "url": "https://picsum.photos/id/1015/1920/1080"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Privado",
+      "items": []
+    }
+  ]
+}

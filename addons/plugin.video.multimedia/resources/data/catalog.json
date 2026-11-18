@@ -2,17 +2,7 @@
   "categories": [
     {
       "name": "Televisión",
-      "categories": [
-        {
-          "name": "TDT",
-          "m3u_groups": "https://www.tdtchannels.com/lists/tv.m3u8",
-          "m3u_fallback": "https://raw.githubusercontent.com/fenix609/MyUniverso-repo/main/content/tdt_respaldo.m3u",
-          "exclude_groups": [
-            "Streaming",
-            "Eventuales"
-          ]
-        }
-      ]
+      "items": []
     },
     {
       "name": "Películas y Series",

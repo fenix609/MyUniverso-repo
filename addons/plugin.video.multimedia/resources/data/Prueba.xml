@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Submenú Prueba: vídeos de ejemplo en distintos formatos para probar la reproducción.
+     Cada <item> admite: title, url, type (video|audio|image), plot, thumb.
+     Los enlaces son de terceros (sitios públicos de muestras). Si alguno cae, cámbialo o bórralo. -->
+<lista>
+    <group name="Archivos de vídeo">
+        <item title="MP4 (H.264)" type="video" url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" plot="Big Buck Bunny, contenedor MP4."/>
+        <item title="MKV (Matroska)" type="video" url="https://filesamples.com/samples/video/mkv/sample_640x360.mkv" plot="Contenedor Matroska."/>
+        <item title="AVI" type="video" url="https://filesamples.com/samples/video/avi/sample_640x360.avi" plot="Contenedor AVI."/>
+        <item title="WebM (VP8/VP9)" type="video" url="https://filesamples.com/samples/video/webm/sample_640x360.webm" plot="Formato WebM."/>
+        <item title="OGV (Theora)" type="video" url="https://filesamples.com/samples/video/ogv/sample_960x540.ogv" plot="Ogg Video."/>
+        <item title="FLV (Flash Video)" type="video" url="https://filesamples.com/samples/video/flv/sample_1920x1080.flv" plot="Flash Video."/>
+        <item title="MOV (QuickTime)" type="video" url="https://filesamples.com/samples/video/mov/sample_640x360.mov" plot="QuickTime."/>
+        <item title="WMV (Windows Media)" type="video" url="https://filesamples.com/samples/video/wmv/sample_640x360.wmv" plot="Windows Media Video."/>
+        <item title="3GP" type="video" url="https://filesamples.com/samples/video/3gp/sample_640x360.3gp" plot="Formato móvil 3GP."/>
+        <item title="MPEG (MPEG-2)" type="video" url="https://filesamples.com/samples/video/mpeg/sample_960x540.mpeg" plot="MPEG-1/2."/>
+    </group>
+    <group name="Streaming (HLS y DASH)">
+        <item title="HLS (.m3u8) - Mux" type="video" url="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" plot="Streaming adaptativo HLS (inputstream.adaptive)."/>
+        <item title="HLS (.m3u8) - Apple" type="video" url="https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8" plot="Ejemplo de Apple, HLS con fMP4."/>
+        <item title="DASH (.mpd) - Akamai" type="video" url="https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd" plot="Streaming adaptativo MPEG-DASH (inputstream.adaptive)."/>
+    </group>
+</lista>

@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Menú principal del addon multimedia.
-     name     = texto que se ve en Kodi
-     catalog  = nombre de la categoría de content/catalog.json que se abre
-     private  = true -> pide el PIN configurado en los ajustes (si hay uno)
-     thumb / fanart = imágenes opcionales (URL) -->
+     <section>  name    = texto que se ve en Kodi
+                catalog = categoría de catalog.json que se abre (por defecto, el mismo nombre)
+                private = true -> pide el PIN de los ajustes (si hay uno)
+     <submenu>  file    = archivo de esta carpeta (Código) que define el submenú -->
 <menu>
-    <section id="television" name="Televisión" catalog="Televisión" thumb="" fanart=""/>
-    <section id="peliculas_series" name="Películas y Series" catalog="Películas y Series" thumb="" fanart=""/>
+    <section id="television" name="Televisión" catalog="Televisión" thumb="" fanart="">
+        <submenu id="tdt" name="TDT" file="TDT.xml"/>
+    </section>
+    <section id="peliculas_series" name="Películas y Series" catalog="Películas y Series" thumb="" fanart="">
+        <submenu id="prueba" name="Prueba" file="Prueba.xml"/>
+    </section>
     <section id="entretenimiento" name="Entretenimiento" catalog="Entretenimiento" thumb="" fanart=""/>
     <section id="privado" name="Privado" catalog="Privado" private="true" thumb="" fanart=""/>
 </menu>

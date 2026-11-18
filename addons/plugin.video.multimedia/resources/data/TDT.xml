@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TDT del addon multimedia.
+     <source>  = lista en línea que se descarga al abrir TDT (TDTChannels, se mantiene sola).
+     <exclude> = grupos de esa lista que no se muestran.
+     <group>/<channel> = canales propios. Se usan si la lista en línea no responde.
+                         Si borras la línea <source>, se usan siempre solo estos canales.
+     Los grupos se ordenan solos: Nacionales primero y después las comunidades. -->
+<tdt>
+    <source url="https://www.tdtchannels.com/lists/tv.m3u8"/>
+    <exclude group="Streaming"/>
+    <exclude group="Eventuales"/>
+
+    <group name="Nacionales">
+        <channel name="La 1" url="https://rtvelivestream.rtve.es/rtvesec/la1/la1_main_dvr.m3u8"/>
+        <channel name="La 2" url="https://rtvelivestream.rtve.es/rtvesec/la2/la2_main_dvr.m3u8"/>
+        <channel name="24h" url="https://rtvelivestream.rtve.es/rtvesec/24h/24h_main_dvr.m3u8"/>
+        <channel name="Teledeporte" url="https://rtvelivestream.rtve.es/rtvesec/tdp/tdp_main.m3u8"/>
+        <channel name="Clan" url="https://rtvelivestream.rtve.es/rtvesec/clan/clan_main_dvr.m3u8"/>
+        <channel name="TRECE" url="https://play.cdn.enetres.net/091DB7AFBD77442B9BA2F141DCC182F5021/021/playlist.m3u8"/>
+        <channel name="El Toro TV" url="https://streaming-1.eltorotv.com/lb0/eltorotv-streaming-web/index.m3u8"/>
+    </group>
+    <group name="Andalucía">
+        <channel name="Canal Sur Andalucía" url="https://dfk2a268yviz9.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-ddiii1m6jt6of/CanalSurAndaluciaES.m3u8"/>
+        <channel name="Canal Sur Más Noticias" url="https://rtva-channel42.flumotion.cloud/playlist.m3u8"/>
+        <channel name="Canal Sur 2 Accesible" url="https://rtva-channel22.flumotion.cloud/playlist.m3u8"/>
+        <channel name="Andalucía Cocina" url="https://cloud.fastchannel.es/mic/manifiest/hls/acocina/acocina.m3u8"/>
+    </group>
+    <group name="Canarias">
+        <channel name="TV Canaria (RTVC)" url="https://rtvclive.flumotion.cloud/rtvc1live/smil:channel1PRG.smil/playlist.m3u8"/>
+        <channel name="La 1 Canarias" url="https://rtvelivestream.rtve.es/rtvesec/can/la1_can_main_dvr.m3u8"/>
+        <channel name="La 2 Canarias" url="https://rtvelivestream.rtve.es/rtvesec/can/la2_can_main_dvr.m3u8"/>
+        <channel name="24h Canarias" url="https://rtvelivestream.rtve.es/rtvesec/can/24h_can_main_dvr.m3u8"/>
+    </group>
+    <group name="Cantabria">
+        <channel name="Popular TV Cantabria" url="https://limited12.todostreaming.es/live/ptvcantabria-livestream.m3u8"/>
+    </group>
+    <group name="Castilla-La Mancha">
+        <channel name="Castilla-La Mancha Media (CMM)" url="https://cdnapisec.kaltura.com/p/2288691/sp/228869100/playManifest/entryId/1_gnz6ity9/protocol/https/format/applehttp/a.m3u8"/>
+    </group>
+    <group name="Cataluña">
+        <channel name="TV3" url="https://directes3-tv-cat.3catdirectes.cat/live-content/tv3-hls/master.m3u8"/>
+        <channel name="33" url="https://directes-tv-cat.3catdirectes.cat/live-content/c33-super3-hls/master.m3u8"/>
+        <channel name="SX3" url="https://directes-tv-cat.3catdirectes.cat/live-content/super3-hls/master.m3u8"/>
+        <channel name="3Cat Info (324)" url="https://directes-tv-cat.3catdirectes.cat/live-content/canal324-hls/master.m3u8"/>
+        <channel name="Esport3" url="https://directes-tv-cat.3catdirectes.cat/live-origin/esport3-hls/master.m3u8"/>
+        <channel name="La 1 Catalunya" url="https://rtvelivestream.rtve.es/rtvesec/cat/la1_cat_main_dvr.m3u8"/>
+        <channel name="La 2Cat" url="https://rtvelivestream.rtve.es/rtvesec/cat/la2_cat_main_dvr.m3u8"/>
+        <channel name="betevé" url="https://cdnapisec.kaltura.com/p/2346171/sp/234617100/playManifest/entryId/1_vfibi2fe/protocol/https/format/applehttp/a.m3u8?referrer=aHR0cHM6Ly9iZXRldmUuY2F0"/>
+    </group>
+    <group name="Comunidad Valenciana">
+        <channel name="7 TeleValencia" url="https://play.cdn.enetres.net/9E9557EFCEBB43A89CEC8FBD3C500247022/028/playlist.m3u8"/>
+    </group>
+    <group name="Extremadura">
+        <channel name="Canal Extremadura Infantil" url="https://cdn-canalextremadura.watchity.net/fast2/master.m3u8"/>
+    </group>
+</tdt>
