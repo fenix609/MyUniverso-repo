@@ -92,7 +92,7 @@
         <language>es</language>
     </extension>
 </addon>
-<addon id="plugin.video.multimedia" name="multimedia" version="1.2.1" provider-name="fenix609">
+<addon id="plugin.video.multimedia" name="multimedia" version="1.3.0" provider-name="fenix609">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="plugin.video.youtube" version="6.0.0"/>
@@ -104,7 +104,7 @@
     <extension point="xbmc.addon.metadata">
         <summary lang="es_ES">multimedia</summary>
         <description lang="es_ES">Reproduce vídeo, música, fotos, listas M3U y enlaces. El catálogo se carga desde GitHub (fenix609/MyUniverso-repo).</description>
-        <news>1.2.1: el menú se carga desde fenix609/Addon-multimedia (Código/menú.xml).</news>
+        <news>1.3.0: Televisión > TDT con canales nacionales y autonómicos agrupados por comunidades.</news>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>

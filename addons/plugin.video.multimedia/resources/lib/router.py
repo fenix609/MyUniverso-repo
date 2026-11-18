@@ -99,9 +99,53 @@ def open_section(section_id):
     list_folder(str(idx))
 
 
+def _group_entries(node):
+    """Canales de la lista en línea; si falla, de la copia de respaldo."""
+    for url in (node.get("m3u_groups"), node.get("m3u_fallback")):
+        if not url:
+            continue
+        try:
+            entries = media.parse_m3u(catalog.fetch_text(url))
+            if entries:
+                return entries
+        except Exception as exc:
+            utils.log("Lista '{}' no disponible: {}".format(url, exc), error=True)
+    utils.notify("No se pudo cargar la lista de canales", error=True)
+    return []
+
+
+def _visible(entries, node):
+    excluded = {media.norm(x) for x in node.get("exclude_groups", [])}
+    return [e for e in entries if media.norm(e.get("group") or "Otros") not in excluded]
+
+
+def list_groups(path_str, node):
+    counts = {}
+    for entry in _visible(_group_entries(node), node):
+        group = entry.get("group") or "Otros"
+        counts[group] = counts.get(group, 0) + 1
+    for group in sorted(counts, key=media.group_sort_key):
+        add_folder("{} ({})".format(group, counts[group]), url_for(action="group", path=path_str, group=group))
+    xbmcplugin.setContent(HANDLE, "files")
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def list_group(path_str, group):
+    path = [int(p) for p in path_str.split(".") if p != ""]
+    node = catalog.get_node(catalog.load_root(), path)
+    xbmcplugin.setContent(HANDLE, "videos")
+    for entry in _visible(_group_entries(node), node):
+        if (entry.get("group") or "Otros") == group:
+            add_media(entry)
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
 def list_folder(path_str):
     path = [int(p) for p in path_str.split(".") if p != ""]
     node = catalog.get_node(catalog.load_root(), path)
+    if node.get("m3u_groups"):
+        list_groups(path_str, node)
+        return
     for idx, cat in enumerate(node.get("categories", [])):
         add_folder(cat.get("name", "Sin nombre"), url_for(action="folder", path=".".join(map(str, path + [idx]))), cat)
     entries = []
@@ -132,6 +176,8 @@ def run(argv, menu_url=None):
         open_section(params.get("id", ""))
     elif action == "folder":
         list_folder(params.get("path", ""))
+    elif action == "group":
+        list_group(params.get("path", ""), params.get("group", ""))
     elif action == "play":
         player.resolve(HANDLE, params["url"], params.get("title", ""), params.get("kind", "video"))
     elif action == "open_link":

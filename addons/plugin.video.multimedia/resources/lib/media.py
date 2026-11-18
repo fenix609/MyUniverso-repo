@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Utilidades puras: tipo de medio, enlaces de YouTube y listas M3U."""
 import re
+import unicodedata
 from urllib.parse import urlparse, parse_qs
 
 AUDIO_EXT = (".mp3", ".flac", ".wav", ".ogg", ".oga", ".opus", ".m4a", ".aac", ".wma", ".ape", ".alac", ".aiff", ".mka")
@@ -76,8 +77,8 @@ def item_kind(entry):
 
 
 def parse_m3u(text):
-    """Lista de dicts {title, url, thumb} a partir de un M3U/M3U8."""
-    items, title, thumb = [], None, ""
+    """Lista de dicts {title, url, thumb, group} a partir de un M3U/M3U8."""
+    items, title, thumb, group = [], None, "", ""
     for raw in text.splitlines():
         line = raw.strip()
         if not line:
@@ -85,8 +86,36 @@ def parse_m3u(text):
         if line.startswith("#EXTINF"):
             m = re.search(r'tvg-logo="([^"]*)"', line)
             thumb = m.group(1) if m else ""
+            g = re.search(r'group-title="([^"]*)"', line)
+            group = g.group(1).strip() if g else ""
             title = line.split(",", 1)[1].strip() if "," in line else None
         elif not line.startswith("#"):
-            items.append({"title": title or line, "url": line, "thumb": thumb})
-            title, thumb = None, ""
+            items.append({"title": title or line, "url": line, "thumb": thumb, "group": group})
+            title, thumb, group = None, "", ""
     return items
+
+
+def norm(text):
+    text = unicodedata.normalize("NFKD", text or "")
+    return "".join(c for c in text if not unicodedata.combining(c)).strip().lower()
+
+
+_PRIORITY = ("nacionales", "informativos", "deportivos", "infantiles")
+_COMMUNITIES = (
+    ("andalucia",), ("aragon",), ("asturias",), ("balears", "baleares"), ("canarias",),
+    ("cantabria",), ("castilla-la mancha", "castilla la mancha"), ("castilla y leon",),
+    ("catalu",), ("ceuta",), ("valencian",), ("extremadura",), ("galicia",), ("rioja",),
+    ("madrid",), ("melilla",), ("murcia",), ("navarra",), ("pais vasco", "euskadi"),
+)
+
+
+def group_sort_key(name):
+    """Nacionales y temáticos primero; después las comunidades; el resto al final."""
+    n = norm(name)
+    for i, key in enumerate(_PRIORITY):
+        if key in n:
+            return (0, i, n)
+    for i, keys in enumerate(_COMMUNITIES):
+        if any(k in n for k in keys):
+            return (1, i, n)
+    return (2, 0, n)
