@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from urllib.parse import urlencode, parse_qsl
+import os
+from urllib.parse import urlencode, urlparse, parse_qsl
 
 import xbmcgui
 import xbmcplugin
@@ -110,6 +111,15 @@ def _group_entries(node):
                 return entries
         except Exception as exc:
             utils.log("Lista '{}' no disponible: {}".format(url, exc), error=True)
+    if node.get("m3u_fallback"):
+        try:
+            name = os.path.basename(urlparse(node["m3u_fallback"]).path)
+            entries = media.parse_m3u(catalog.read_local(name))
+            if entries:
+                utils.log("Usando la lista de canales incluida en el addon")
+                return entries
+        except Exception as exc:
+            utils.log("Lista local no disponible: {}".format(exc), error=True)
     utils.notify("No se pudo cargar la lista de canales", error=True)
     return []
 

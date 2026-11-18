@@ -1,0 +1,55 @@
+#EXTM3U
+#EXTINF:-1 group-title="Nacionales",La 1
+https://rtvelivestream.rtve.es/rtvesec/la1/la1_main_dvr.m3u8
+#EXTINF:-1 group-title="Nacionales",La 2
+https://rtvelivestream.rtve.es/rtvesec/la2/la2_main_dvr.m3u8
+#EXTINF:-1 group-title="Nacionales",24h
+https://rtvelivestream.rtve.es/rtvesec/24h/24h_main_dvr.m3u8
+#EXTINF:-1 group-title="Nacionales",Teledeporte
+https://rtvelivestream.rtve.es/rtvesec/tdp/tdp_main.m3u8
+#EXTINF:-1 group-title="Nacionales",Clan
+https://rtvelivestream.rtve.es/rtvesec/clan/clan_main_dvr.m3u8
+#EXTINF:-1 group-title="Nacionales",TRECE
+https://play.cdn.enetres.net/091DB7AFBD77442B9BA2F141DCC182F5021/021/playlist.m3u8
+#EXTINF:-1 group-title="Nacionales",El Toro TV
+https://streaming-1.eltorotv.com/lb0/eltorotv-streaming-web/index.m3u8
+#EXTINF:-1 group-title="Andalucía",Canal Sur Andalucía
+https://dfk2a268yviz9.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-ddiii1m6jt6of/CanalSurAndaluciaES.m3u8
+#EXTINF:-1 group-title="Andalucía",Canal Sur Más Noticias
+https://rtva-channel42.flumotion.cloud/playlist.m3u8
+#EXTINF:-1 group-title="Andalucía",Canal Sur 2 Accesible
+https://rtva-channel22.flumotion.cloud/playlist.m3u8
+#EXTINF:-1 group-title="Andalucía",Andalucía Cocina
+https://cloud.fastchannel.es/mic/manifiest/hls/acocina/acocina.m3u8
+#EXTINF:-1 group-title="Canarias",TV Canaria (RTVC)
+https://rtvclive.flumotion.cloud/rtvc1live/smil:channel1PRG.smil/playlist.m3u8
+#EXTINF:-1 group-title="Canarias",La 1 Canarias
+https://rtvelivestream.rtve.es/rtvesec/can/la1_can_main_dvr.m3u8
+#EXTINF:-1 group-title="Canarias",La 2 Canarias
+https://rtvelivestream.rtve.es/rtvesec/can/la2_can_main_dvr.m3u8
+#EXTINF:-1 group-title="Canarias",24h Canarias
+https://rtvelivestream.rtve.es/rtvesec/can/24h_can_main_dvr.m3u8
+#EXTINF:-1 group-title="Cantabria",Popular TV Cantabria
+https://limited12.todostreaming.es/live/ptvcantabria-livestream.m3u8
+#EXTINF:-1 group-title="Castilla-La Mancha",Castilla-La Mancha Media (CMM)
+https://cdnapisec.kaltura.com/p/2288691/sp/228869100/playManifest/entryId/1_gnz6ity9/protocol/https/format/applehttp/a.m3u8
+#EXTINF:-1 group-title="Cataluña",TV3
+https://directes3-tv-cat.3catdirectes.cat/live-content/tv3-hls/master.m3u8
+#EXTINF:-1 group-title="Cataluña",33
+https://directes-tv-cat.3catdirectes.cat/live-content/c33-super3-hls/master.m3u8
+#EXTINF:-1 group-title="Cataluña",SX3
+https://directes-tv-cat.3catdirectes.cat/live-content/super3-hls/master.m3u8
+#EXTINF:-1 group-title="Cataluña",3Cat Info (324)
+https://directes-tv-cat.3catdirectes.cat/live-content/canal324-hls/master.m3u8
+#EXTINF:-1 group-title="Cataluña",Esport3
+https://directes-tv-cat.3catdirectes.cat/live-origin/esport3-hls/master.m3u8
+#EXTINF:-1 group-title="Cataluña",La 1 Catalunya
+https://rtvelivestream.rtve.es/rtvesec/cat/la1_cat_main_dvr.m3u8
+#EXTINF:-1 group-title="Cataluña",La 2Cat
+https://rtvelivestream.rtve.es/rtvesec/cat/la2_cat_main_dvr.m3u8
+#EXTINF:-1 group-title="Cataluña",betevé
+https://cdnapisec.kaltura.com/p/2346171/sp/234617100/playManifest/entryId/1_vfibi2fe/protocol/https/format/applehttp/a.m3u8?referrer=aHR0cHM6Ly9iZXRldmUuY2F0
+#EXTINF:-1 group-title="Comunidad Valenciana",7 TeleValencia
+https://play.cdn.enetres.net/9E9557EFCEBB43A89CEC8FBD3C500247022/028/playlist.m3u8
+#EXTINF:-1 group-title="Extremadura",Canal Extremadura Infantil
+https://cdn-canalextremadura.watchity.net/fast2/master.m3u8

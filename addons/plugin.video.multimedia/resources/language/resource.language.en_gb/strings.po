@@ -1,0 +1,34 @@
+# Kodi Media Center language file
+# Addon Name: multimedia
+# Addon id: plugin.video.multimedia
+# Addon Provider: fenix609
+msgid ""
+msgstr ""
+"Project-Id-Version: plugin.video.multimedia\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en_GB\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "#30000"
+msgid "General"
+msgstr ""
+
+msgctxt "#30001"
+msgid "Catalog URL (JSON)"
+msgstr ""
+
+msgctxt "#30002"
+msgid "Catalog URL"
+msgstr ""
+
+msgctxt "#30003"
+msgid "PIN for the Private section (empty = no PIN)"
+msgstr ""
+
+msgctxt "#30004"
+msgid "Numeric PIN"
+msgstr ""
+
+msgctxt "#30005"
+msgid "Show the 'Enlace' (link) menu"
+msgstr ""

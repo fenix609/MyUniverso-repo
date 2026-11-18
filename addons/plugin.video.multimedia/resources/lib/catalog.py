@@ -16,12 +16,33 @@ def fetch_text(url):
         return resp.read().decode("utf-8", errors="replace")
 
 
+ALT_CATALOG = ("https://raw.githubusercontent.com/fenix609/Addon-multimedia/"
+               "refs/heads/main/C%C3%B3digo/catalog.json")
+
+
+def read_local(name):
+    """Archivo incluido dentro del addon (resources/data)."""
+    path = os.path.join(ADDON_DIR, "resources", "data", name)
+    with open(path, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def _as_root(data):
+    return {"categories": data} if isinstance(data, list) else data
+
+
 def load_root():
+    """Catálogo desde GitHub; si no está disponible, la copia incluida en el addon."""
     url = utils.get_setting("catalog_url") or DEFAULT_CATALOG
+    for candidate in dict.fromkeys([url, ALT_CATALOG]):
+        try:
+            return _as_root(json.loads(fetch_text(candidate)))
+        except Exception as exc:
+            utils.log("Catálogo '{}' no disponible: {}".format(candidate, exc))
     try:
-        data = json.loads(fetch_text(url))
-        if isinstance(data, list):
-            data = {"categories": data}
+        data = _as_root(json.loads(read_local("catalog.json")))
+        utils.log("Usando el catálogo incluido en el addon")
+        utils.notify("Catálogo en línea no disponible: usando copia local")
         return data
     except Exception as exc:
         utils.log("Error cargando catálogo: {}".format(exc), error=True)
@@ -55,14 +76,10 @@ def load_menu():
             return menu.parse_menu(fetch_text(url))
         except Exception as exc:
             utils.log("Menú remoto '{}' no disponible: {}".format(url, exc))
-    for name in MENU_FILES:
-        path = os.path.join(ADDON_DIR, name)
-        if os.path.isfile(path):
-            try:
-                with open(path, encoding="utf-8") as fh:
-                    return menu.parse_menu(fh.read())
-            except Exception as exc:
-                utils.log("Menú local '{}' inválido: {}".format(name, exc), error=True)
+    try:
+        return menu.parse_menu(read_local("menu.xml"))
+    except Exception as exc:
+        utils.log("Menú local no disponible: {}".format(exc))
     return list(menu.DEFAULT_SECTIONS)
 
 
