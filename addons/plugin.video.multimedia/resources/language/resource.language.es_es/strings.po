@@ -28,7 +28,3 @@ msgstr "PIN de la sección Privado (vacío = sin PIN)"
 msgctxt "#30004"
 msgid "Numeric PIN"
 msgstr "PIN numérico"
-
-msgctxt "#30005"
-msgid "Show the 'Enlace' (link) menu"
-msgstr "Mostrar el menú 'Enlace'"

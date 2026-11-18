@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from urllib.parse import quote
+
 import xbmc
 import xbmcgui
 import xbmcplugin
@@ -22,26 +24,29 @@ def build_listitem(url, title="", kind="video"):
     return item
 
 
+# (id del addon, plantilla para magnet, plantilla para archivo .torrent)
+TORRENT_ADDONS = (
+    ("plugin.video.elementum", "plugin://plugin.video.elementum/play?uri={}", "plugin://plugin.video.elementum/play?uri={}"),
+    ("plugin.video.torrest", "plugin://plugin.video.torrest/play_magnet?magnet={}", "plugin://plugin.video.torrest/play_url?url={}"),
+    ("plugin.video.quasar", "plugin://plugin.video.quasar/playuri?uri={}", "plugin://plugin.video.quasar/playuri?uri={}"),
+)
+
+
+def torrent_url(uri):
+    """Dirección para reproducir un magnet/.torrent con el addon de torrents instalado (o None)."""
+    is_magnet = uri.lower().startswith("magnet:")
+    for addon_id, magnet_tpl, file_tpl in TORRENT_ADDONS:
+        if xbmc.getCondVisibility("System.HasAddon({})".format(addon_id)):
+            return (magnet_tpl if is_magnet else file_tpl).format(quote(uri, safe=""))
+    return None
+
+
 def resolve(handle, url, title="", kind="video"):
-    xbmcplugin.setResolvedUrl(handle, True, build_listitem(url, title, kind))
-
-
-def open_link():
-    """Pide un enlace (YouTube, vídeo, audio o imagen) y lo reproduce/muestra."""
-    link = xbmcgui.Dialog().input("Pega el enlace", type=xbmcgui.INPUT_ALPHANUM)
-    if not link:
-        return
-    entry = {"url": link.strip()}
-    kind, sub, yt_id = media.item_kind(entry)
-    if kind == "youtube":
-        if not utils.has_youtube():
-            utils.notify("Falta el addon de YouTube", error=True)
+    if kind == "torrent":
+        target = torrent_url(url)
+        if not target:
+            utils.notify("Instala Elementum o Torrest para reproducir torrents", error=True)
+            xbmcplugin.setResolvedUrl(handle, False, xbmcgui.ListItem())
             return
-        if sub == "video":
-            xbmc.Player().play(media.youtube_url("video", yt_id))
-        else:
-            xbmc.executebuiltin('ActivateWindow(Videos,"{}",return)'.format(media.youtube_url(sub, yt_id)))
-    elif kind == "image":
-        xbmc.executebuiltin('ShowPicture("{}")'.format(entry["url"]))
-    else:
-        xbmc.Player().play(entry["url"], build_listitem(entry["url"], entry["url"], kind))
+        url = target
+    xbmcplugin.setResolvedUrl(handle, True, build_listitem(url, title, kind))

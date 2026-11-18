@@ -28,7 +28,3 @@ msgstr ""
 msgctxt "#30004"
 msgid "Numeric PIN"
 msgstr ""
-
-msgctxt "#30005"
-msgid "Show the 'Enlace' (link) menu"
-msgstr ""

@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+import os
+
 import xbmc
 import xbmcgui
 import xbmcaddon
+import xbmcvfs
 
 ADDON = xbmcaddon.Addon()
 NAME = "multimedia"
@@ -27,3 +30,11 @@ def get_bool(key, default=True):
 
 def has_youtube():
     return xbmc.getCondVisibility("System.HasAddon(plugin.video.youtube)")
+
+
+def profile_dir():
+    """Carpeta de datos del usuario (addon_data); se crea si no existe."""
+    path = xbmcvfs.translatePath(ADDON.getAddonInfo("profile"))
+    if not os.path.isdir(path):
+        os.makedirs(path)
+    return path

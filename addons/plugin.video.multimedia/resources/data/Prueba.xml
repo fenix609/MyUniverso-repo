@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Submenú Prueba: vídeos de ejemplo en distintos formatos para probar la reproducción.
-     Cada <item> admite: title, url, type (video|audio|image), plot, thumb.
-     Los enlaces son de terceros (sitios públicos de muestras). Si alguno cae, cámbialo o bórralo. -->
-<lista>
+<!-- Submenú Prueba: vídeos de ejemplo en distintos formatos.
+     autotest="true" -> aparece la opción "Probar todos automáticamente".
+     Esa opción reproduce cada vídeo; si falla, prueba los <alt> (enlaces alternativos) y,
+     si tampoco funcionan, busca uno nuevo en archive.org con la misma extensión y lo guarda.
+     Los torrents (magnet: o .torrent) necesitan Elementum, Torrest o Quasar; si no hay ninguno se omiten.
+     Cada <item> admite: title, url, type (video|audio|image), plot, thumb. -->
+<lista autotest="true">
     <group name="Archivos de vídeo">
-        <item title="MP4 (H.264)" type="video" url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" plot="Big Buck Bunny, contenedor MP4."/>
+        <item title="MP4 (H.264)" type="video" url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" plot="Big Buck Bunny, contenedor MP4.">
+            <alt url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"/>
+            <alt url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"/>
+        </item>
         <item title="MKV (Matroska)" type="video" url="https://filesamples.com/samples/video/mkv/sample_640x360.mkv" plot="Contenedor Matroska."/>
         <item title="AVI" type="video" url="https://filesamples.com/samples/video/avi/sample_640x360.avi" plot="Contenedor AVI."/>
         <item title="WebM (VP8/VP9)" type="video" url="https://filesamples.com/samples/video/webm/sample_640x360.webm" plot="Formato WebM."/>
@@ -16,8 +22,27 @@
         <item title="MPEG (MPEG-2)" type="video" url="https://filesamples.com/samples/video/mpeg/sample_960x540.mpeg" plot="MPEG-1/2."/>
     </group>
     <group name="Streaming (HLS y DASH)">
-        <item title="HLS (.m3u8) - Mux" type="video" url="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" plot="Streaming adaptativo HLS (inputstream.adaptive)."/>
-        <item title="HLS (.m3u8) - Apple" type="video" url="https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8" plot="Ejemplo de Apple, HLS con fMP4."/>
-        <item title="DASH (.mpd) - Akamai" type="video" url="https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd" plot="Streaming adaptativo MPEG-DASH (inputstream.adaptive)."/>
+        <item title="HLS (.m3u8) - Mux" type="video" url="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" plot="Streaming adaptativo HLS.">
+            <alt url="https://test-streams.mux.dev/test_001/stream.m3u8"/>
+            <alt url="https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8"/>
+        </item>
+        <item title="HLS (.m3u8) - Apple" type="video" url="https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8" plot="Ejemplo de Apple, HLS con fMP4.">
+            <alt url="https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/bipbop_4x3_variant.m3u8"/>
+        </item>
+        <item title="DASH (.mpd) - Akamai" type="video" url="https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd" plot="Streaming adaptativo MPEG-DASH.">
+            <alt url="https://storage.googleapis.com/shaka-demo-assets/angel-one/dash.mpd"/>
+            <alt url="https://dash.akamaized.net/envivio/EnvivioDash3/manifest.mpd"/>
+        </item>
+    </group>
+    <group name="Torrents">
+        <item title="Sintel (magnet)" type="video" url="magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&amp;dn=Sintel&amp;tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&amp;tr=udp%3A%2F%2Fopen.tracker.cl%3A1337%2Fannounce" plot="Película libre de la Blender Foundation (CC-BY).">
+            <alt url="https://webtorrent.io/torrents/sintel.torrent"/>
+        </item>
+        <item title="Big Buck Bunny (magnet)" type="video" url="magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c&amp;dn=Big+Buck+Bunny&amp;tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&amp;tr=udp%3A%2F%2Fopen.tracker.cl%3A1337%2Fannounce" plot="Película libre de la Blender Foundation (CC-BY).">
+            <alt url="https://webtorrent.io/torrents/big-buck-bunny.torrent"/>
+        </item>
+        <item title="Tears of Steel (magnet)" type="video" url="magnet:?xt=urn:btih:209c8226b299b308beaf2b9cd3fb49212dbd13ec&amp;dn=Tears+of+Steel&amp;tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&amp;tr=udp%3A%2F%2Fopen.tracker.cl%3A1337%2Fannounce" plot="Película libre de la Blender Foundation (CC-BY).">
+            <alt url="https://webtorrent.io/torrents/tears-of-steel.torrent"/>
+        </item>
     </group>
 </lista>

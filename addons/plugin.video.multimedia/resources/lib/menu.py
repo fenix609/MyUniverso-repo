@@ -60,14 +60,17 @@ def root_tag(text):
 
 
 def parse_list(text):
-    """<lista><group name=".."><item title url type plot thumb/></group></lista>"""
+    """<lista autotest="true"><group name=".."><item title url type plot thumb><alt url/></item></group></lista>
+    Devuelve {"groups": [...], "autotest": bool}."""
+    root = _root(text)
     groups = []
-    for grp in _root(text).findall("group"):
+    for grp in root.findall("group"):
         items = []
         for it in grp.findall("item"):
             if it.get("url"):
                 items.append({"title": it.get("title") or it.get("name") or it.get("url"), "url": it.get("url"),
                               "type": it.get("type", ""), "plot": it.get("plot", ""), "thumb": it.get("thumb", ""),
-                              "headers": it.get("headers", "")})
+                              "headers": it.get("headers", ""),
+                              "alts": [a.get("url") for a in it.findall("alt") if a.get("url")]})
         groups.append({"name": grp.get("name", "").strip() or "Sin nombre", "items": items})
-    return groups
+    return {"groups": groups, "autotest": root.get("autotest", "false").lower() == "true"}

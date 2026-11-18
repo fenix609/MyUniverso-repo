@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from urllib.parse import urlencode, parse_qsl
 
+import xbmc
 import xbmcgui
 import xbmcplugin
 
-from . import catalog, media, menu, player, utils
+from . import catalog, media, menu, player, probe, utils
 
 HANDLE = -1
 BASE = ""
@@ -46,6 +47,14 @@ def add_media(entry):
         xbmcplugin.addDirectoryItem(HANDLE, media.youtube_url("video", yt_id), item, False)
         return
 
+    if kind == "torrent":
+        item = xbmcgui.ListItem(label=title)
+        item.setInfo("video", {"title": title, "plot": plot})
+        _art(item, entry)
+        item.setProperty("IsPlayable", "true")
+        xbmcplugin.addDirectoryItem(HANDLE, url_for(action="play", url=entry.get("url", ""), title=title, kind="torrent"), item, False)
+        return
+
     url = entry.get("url", "")
     if entry.get("headers"):
         url = "{}|{}".format(url, entry["headers"])
@@ -71,9 +80,6 @@ def add_media(entry):
 def list_root():
     for sec in catalog.load_menu():
         add_folder(sec["name"], url_for(action="section", id=sec["id"]), sec)
-    if utils.get_bool("show_open_link"):
-        item = xbmcgui.ListItem(label="Enlace")
-        xbmcplugin.addDirectoryItem(HANDLE, url_for(action="open_link"), item, False)
     xbmcplugin.setContent(HANDLE, "files")
     xbmcplugin.endOfDirectory(HANDLE)
 
@@ -146,16 +152,22 @@ def _tdt_entries(tdt):
     return [e for e in entries if media.norm(e.get("group") or "Otros") not in excluded]
 
 
-def _parse_code_file(file):
-    """Devuelve ('tdt', datos) o ('lista', grupos) según el tipo de archivo."""
+def _parse_code_file(file, use_cache=True):
+    """Devuelve ('tdt', datos) o ('lista', datos) según el tipo de archivo."""
     text = catalog.load_code_text(file)
     try:
         if menu.root_tag(text) == "tdt":
             return "tdt", menu.parse_tdt(text)
-        return "lista", menu.parse_list(text)
+        data = menu.parse_list(text)
+        if use_cache:
+            try:
+                data = probe.apply_cache(data, probe.load_cache(utils.profile_dir()))
+            except Exception as exc:
+                utils.log("Caché de pruebas no disponible: {}".format(exc))
+        return "lista", data
     except Exception as exc:
         utils.log("'{}' inválido: {}".format(file, exc), error=True)
-        return "lista", []
+        return "lista", {"groups": [], "autotest": False}
 
 
 def open_submenu(file):
@@ -190,20 +202,23 @@ def list_tdt_group(file, group):
 
 
 # ---------- submenús genéricos (<lista>, p. ej. Prueba.xml) ----------
-def list_lista(file, groups):
+def _add_auto_option(file, data):
+    if data.get("autotest"):
+        add_folder("[ Probar todos automáticamente ]", url_for(action="auto_test", file=file))
+
+
+def list_lista(file, data):
+    groups = data["groups"]
+    _add_auto_option(file, data)
     if len(groups) == 1:
-        _add_items(groups[0]["items"])
-        return
-    for grp in groups:
-        add_folder("{} ({})".format(grp["name"], len(grp["items"])), url_for(action="listgroup", file=file, group=grp["name"]))
-    xbmcplugin.setContent(HANDLE, "files")
-    xbmcplugin.endOfDirectory(HANDLE)
-
-
-def _add_items(items):
-    for entry in items:
-        add_media(entry)
-    xbmcplugin.setContent(HANDLE, "videos")
+        for entry in groups[0]["items"]:
+            add_media(entry)
+        xbmcplugin.setContent(HANDLE, "videos")
+    else:
+        for grp in groups:
+            add_folder("{} ({})".format(grp["name"], len(grp["items"])),
+                       url_for(action="listgroup", file=file, group=grp["name"]))
+        xbmcplugin.setContent(HANDLE, "files")
     xbmcplugin.endOfDirectory(HANDLE)
 
 
@@ -211,8 +226,17 @@ def list_lista_group(file, group):
     kind, data = _parse_code_file(file)
     items = []
     if kind == "lista":
-        items = next((g["items"] for g in data if g["name"] == group), [])
-    _add_items(items)
+        items = next((g["items"] for g in data["groups"] if g["name"] == group), [])
+    for entry in items:
+        add_media(entry)
+    xbmcplugin.setContent(HANDLE, "videos")
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def start_auto_test(file):
+    """Lanza la prueba en segundo plano (puede durar minutos) y deja la lista como estaba."""
+    xbmc.executebuiltin("RunPlugin({})".format(url_for(action="auto_run", file=file)))
+    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
 
 
 def run(argv, menu_url=None):
@@ -226,6 +250,11 @@ def run(argv, menu_url=None):
         open_section(params.get("id", ""))
     elif action == "submenu":
         open_submenu(params.get("file", ""))
+    elif action == "auto_test":
+        start_auto_test(params.get("file", ""))
+    elif action == "auto_run":
+        from . import autotest
+        autotest.run(params.get("file", ""))
     elif action == "listgroup":
         list_lista_group(params.get("file", ""), params.get("group", ""))
     elif action == "tdtgroup":
@@ -234,7 +263,5 @@ def run(argv, menu_url=None):
         list_folder(params.get("path", ""))
     elif action == "play":
         player.resolve(HANDLE, params["url"], params.get("title", ""), params.get("kind", "video"))
-    elif action == "open_link":
-        player.open_link()
     else:
         list_root()

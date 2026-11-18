@@ -62,6 +62,9 @@ def item_kind(entry):
     if yt:
         return ("youtube", yt[0], yt[1])
     declared = (entry.get("type") or "").lower()
+    url_low = entry.get("url", "").lower()
+    if declared == "torrent" or url_low.startswith("magnet:") or _ext(entry.get("url", "")) == ".torrent":
+        return ("torrent", None, None)
     if declared in ("audio", "music", "musica"):
         return ("audio", None, None)
     if declared in ("image", "photo", "foto", "imagen"):
