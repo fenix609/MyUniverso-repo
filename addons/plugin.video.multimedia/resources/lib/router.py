@@ -261,6 +261,8 @@ def list_tree(file, path_str, root=None):
     path = [int(p) for p in path_str.split(".") if p != ""]
     node = root
     inherit = {"fanart": root.get("fanart", "")}
+    if root.get("mediatype") == "tvshow" or root.get("tvshowtitle"):  # raíz de un XML propio de una serie
+        inherit["tvshowtitle"] = root.get("tvshowtitle") or root.get("name", "")
     for idx in path:
         folders = node.get("folders", [])
         if idx < 0 or idx >= len(folders):
@@ -282,9 +284,11 @@ def list_tree(file, path_str, root=None):
         return entry
 
     for idx, folder in enumerate(node.get("folders", [])):
-        add_folder(folder.get("name", "Sin nombre"),
-                   url_for(action="tree", file=file, path=".".join(map(str, path + [idx]))),
-                   with_inherited(folder))
+        if folder.get("file"):  # la carpeta se abre desde otro XML de Código (p. ej. Juego de Tronos.xml)
+            url = url_for(action="tree", file=folder["file"], path="")
+        else:
+            url = url_for(action="tree", file=file, path=".".join(map(str, path + [idx])))
+        add_folder(folder.get("name", "Sin nombre"), url, with_inherited(folder))
     for entry in node.get("items", []):
         add_media(with_inherited(entry))
     if node.get("items"):

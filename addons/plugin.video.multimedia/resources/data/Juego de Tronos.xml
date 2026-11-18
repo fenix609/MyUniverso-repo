@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Juego de Tronos: temporadas y episodios. Lo abre Series.xml (<folder name="Juego de Tronos" file="Juego de Tronos.xml"/>).
+     Súbelo a la carpeta Código de GitHub con este mismo nombre: Juego de Tronos.xml
+
+     ESTRUCTURA: <tree> (la serie) > <folder> (temporadas) > <item> (episodios).
+       title y plot van en español; originaltitle conserva el título original en inglés.
+
+     ENLACES DE GOOGLE DRIVE (en cada <item>):
+       drive="..."  pega el enlace de compartir completo (https://drive.google.com/file/d/ID/view?usp=sharing)
+                    o solo el ID del archivo. El archivo debe estar compartido como "Cualquier persona con el enlace".
+       Si drive="" el episodio aparece, pero avisa de que aún no tiene enlace.
+       (Opcional) en los ajustes del addon puedes poner una clave API de Google Drive: es más fiable
+       con archivos grandes y cuando Drive limita las descargas.
+
+     IMÁGENES (en el <tree> de la serie, en cada <folder> o <item>; todas son URL y opcionales):
+       icon, thumb, poster, fanart, banner, clearlogo.  Si falta fanart, hereda el de la carpeta superior.
+
+     INFORMACIÓN (opcional): plot, year, genre, studio, director, rating (0-10), duration (minutos),
+       mpaa, premiered (AAAA-MM-DD), tagline, originaltitle.
+       mediatype = season | episode; season="1" y episode="N" en cada episodio. -->
+<tree name="Juego de Tronos" mediatype="tvshow" fanart="">
+    <folder name="Temporada 1" mediatype="season" season="1" year="2011"
+            plot="Primera temporada. Los Stark, los Lannister y los Targaryen entran en una lucha por el Trono de Hierro."
+            icon="" thumb="" poster="" fanart="">
+        <item title="1x01 · Se acerca el invierno" season="1" episode="1" originaltitle="Winter Is Coming"
+              drive="" plot="El rey Robert visita Invernalia y pide a Ned Stark que sea su Mano; en el Muro aparece una antigua amenaza y Daenerys es entregada en matrimonio a Khal Drogo." duration="" icon="" thumb="" fanart=""/>
+        <item title="1x02 · El camino real" season="1" episode="2" originaltitle="The Kingsroad"
+              drive="" plot="Ned parte hacia el sur con sus hijas, Jon Nieve se dirige al Muro y Bran sigue inconsciente tras su caída." duration="" icon="" thumb="" fanart=""/>
+        <item title="1x03 · Lord Nieve" season="1" episode="3" originaltitle="Lord Snow"
+              drive="" plot="Ned se instala como Mano del Rey en Desembarco del Rey, Jon llega al Muro y Daenerys se adapta a la vida entre los dothrakis." duration="" icon="" thumb="" fanart=""/>
+        <item title="1x04 · Lisiados, bastardos y cosas rotas" season="1" episode="4" originaltitle="Cripples, Bastards, and Broken Things"
+              drive="" plot="Bran despierta tras su caída, Tyrion visita el Muro y Ned investiga la muerte de Jon Arryn." duration="" icon="" thumb="" fanart=""/>
+        <item title="1x05 · El lobo y el león" season="1" episode="5" originaltitle="The Wolf and the Lion"
+              drive="" plot="Catelyn detiene a Tyrion y se lo lleva al Nido de Águilas, mientras Ned se enfrenta a los Lannister en Desembarco del Rey." duration="" icon="" thumb="" fanart=""/>
+        <item title="1x06 · Una corona de oro" season="1" episode="6" originaltitle="A Golden Crown"
+              drive="" plot="Tyrion es juzgado en el Nido de Águilas, Ned sufre las consecuencias de enfrentarse a los Lannister y Viserys reclama su corona." duration="" icon="" thumb="" fanart=""/>
+        <item title="1x07 · Ganas o mueres" season="1" episode="7" originaltitle="You Win or You Die"
+              drive="" plot="Ned descubre un secreto de los Lannister y debe elegir entre su deber y la seguridad de su familia." duration="" icon="" thumb="" fanart=""/>
+        <item title="1x08 · El extremo puntiagudo" season="1" episode="8" originaltitle="The Pointy End"
+              drive="" plot="Estalla el conflicto entre los Stark y los Lannister, Arya lucha por sobrevivir y Robb reúne a sus abanderados." duration="" icon="" thumb="" fanart=""/>
+        <item title="1x09 · Baelor" season="1" episode="9" originaltitle="Baelor"
+              drive="" plot="El destino de Ned Stark se decide en Desembarco del Rey mientras Robb lleva la guerra contra los Lannister." duration="" icon="" thumb="" fanart=""/>
+        <item title="1x10 · Fuego y sangre" season="1" episode="10" originaltitle="Fire and Blood"
+              drive="" plot="Tras una tragedia, los Stark afrontan la guerra, Jon decide su lugar y Daenerys toma una decisión extrema." duration="" icon="" thumb="" fanart=""/>
+    </folder>
+    <folder name="Temporada 2" mediatype="season" season="2" year="2012"
+            plot="Segunda temporada. La guerra de los cinco reyes sacude Poniente."
+            icon="" thumb="" poster="" fanart="">
+        <item title="2x01 · El Norte recuerda" season="2" episode="1" originaltitle="The North Remembers"
+              drive="" plot="Joffrey ocupa el trono mientras estalla la guerra de los cinco reyes y Stannis proclama su derecho." duration="" icon="" thumb="" fanart=""/>
+        <item title="2x02 · Las tierras de la noche" season="2" episode="2" originaltitle="The Night Lands"
+              drive="" plot="Arya viaja hacia el norte, Theon llega a las Islas del Hierro y Tyrion toma las riendas en Desembarco del Rey." duration="" icon="" thumb="" fanart=""/>
+        <item title="2x03 · Lo que está muerto no puede morir" season="2" episode="3" originaltitle="What Is Dead May Never Die"
+              drive="" plot="Catelyn busca una alianza con Renly Baratheon mientras Tyrion se abre camino en la corte." duration="" icon="" thumb="" fanart=""/>
+        <item title="2x04 · Jardín de huesos" season="2" episode="4" originaltitle="Garden of Bones"
+              drive="" plot="La guerra se endurece: Daenerys llega a Qarth, Arya es llevada a Harrenhal y Joffrey muestra su crueldad." duration="" icon="" thumb="" fanart=""/>
+        <item title="2x05 · El fantasma de Harrenhal" season="2" episode="5" originaltitle="The Ghost of Harrenhal"
+              drive="" plot="Arya encuentra ayuda inesperada en Harrenhal, Tyrion maniobra en la corte y Daenerys busca aliados en Qarth." duration="" icon="" thumb="" fanart=""/>
+        <item title="2x06 · Los antiguos dioses y los nuevos" season="2" episode="6" originaltitle="The Old Gods and the New"
+              drive="" plot="Invernalia sufre un ataque devastador y Tyrion afronta disturbios en Desembarco del Rey." duration="" icon="" thumb="" fanart=""/>
+        <item title="2x07 · Un hombre sin honor" season="2" episode="7" originaltitle="A Man Without Honor"
+              drive="" plot="Daenerys pierde lo que más valora en Qarth, Jaime intenta escapar y Theon actúa con crueldad en Invernalia." duration="" icon="" thumb="" fanart=""/>
+        <item title="2x08 · El príncipe de Invernalia" season="2" episode="8" originaltitle="The Prince of Winterfell"
+              drive="" plot="Desembarco del Rey se prepara para el ataque de Stannis mientras la guerra se complica para todos los bandos." duration="" icon="" thumb="" fanart=""/>
+        <item title="2x09 · Aguasnegras" season="2" episode="9" originaltitle="Blackwater"
+              drive="" plot="Stannis ataca Desembarco del Rey y se libra la batalla decisiva del Aguasnegras." duration="" icon="" thumb="" fanart=""/>
+        <item title="2x10 · Valar Morghulis" season="2" episode="10" originaltitle="Valar Morghulis"
+              drive="" plot="Tras la batalla se redefine el equilibrio de poder, Daenerys afronta un desafío en Qarth y la Guardia se adentra más allá del Muro." duration="" icon="" thumb="" fanart=""/>
+    </folder>
+    <folder name="Temporada 3" mediatype="season" season="3" year="2013"
+            plot="Tercera temporada. Las alianzas cambian mientras Daenerys reúne un ejército y la guerra sigue en el sur."
+            icon="" thumb="" poster="" fanart="">
+        <item title="3x01 · Valar Dohaeris" season="3" episode="1" originaltitle="Valar Dohaeris"
+              drive="" plot="Desembarco del Rey celebra su victoria, Daenerys sigue su camino a Astapor y Jon Nieve se acerca a Mance Rayder." duration="" icon="" thumb="" fanart=""/>
+        <item title="3x02 · Alas negras, palabras negras" season="3" episode="2" originaltitle="Dark Wings, Dark Words"
+              drive="" plot="Jaime y Brienne viajan juntos como prisioneros, Tyrion afronta su nuevo papel en la corte y Daenerys negocia en Astapor." duration="" icon="" thumb="" fanart=""/>
+        <item title="3x03 · El castigo de la marcha" season="3" episode="3" originaltitle="Walk of Punishment"
+              drive="" plot="Jaime paga un alto precio en su cautiverio y Daenerys cierra un trato arriesgado en Astapor." duration="" icon="" thumb="" fanart=""/>
+        <item title="3x04 · Y ahora su guardia ha terminado" season="3" episode="4" originaltitle="And Now His Watch Is Ended"
+              drive="" plot="Daenerys toma una decisión audaz en Astapor y Jaime y Brienne llegan a Harrenhal." duration="" icon="" thumb="" fanart=""/>
+        <item title="3x05 · Besado por el fuego" season="3" episode="5" originaltitle="Kissed by Fire"
+              drive="" plot="Jaime confiesa una verdad en Harrenhal y el Perro se enfrenta a un duelo ante la Hermandad sin Estandartes." duration="" icon="" thumb="" fanart=""/>
+        <item title="3x06 · La escalada" season="3" episode="6" originaltitle="The Climb"
+              drive="" plot="Jon Nieve escala el Muro junto a los salvajes y en Desembarco del Rey crecen las intrigas." duration="" icon="" thumb="" fanart=""/>
+        <item title="3x07 · La doncella y el oso" season="3" episode="7" originaltitle="The Bear and the Maiden Fair"
+              drive="" plot="Jaime regresa a Desembarco del Rey mientras Tyrion, Sansa y Daenerys avanzan en sus propios planes." duration="" icon="" thumb="" fanart=""/>
+        <item title="3x08 · Hijos segundos" season="3" episode="8" originaltitle="Second Sons"
+              drive="" plot="Tyrion y Sansa se casan en Desembarco del Rey y Daenerys negocia con los Hijos Segundos." duration="" icon="" thumb="" fanart=""/>
+        <item title="3x09 · Las lluvias de Castamere" season="3" episode="9" originaltitle="The Rains of Castamere"
+              drive="" plot="Los Stark y los Frey se reúnen para una boda en Los Gemelos, un evento que cambiará el rumbo de la guerra." duration="" icon="" thumb="" fanart=""/>
+        <item title="3x10 · Mhysa" season="3" episode="10" originaltitle="Mhysa"
+              drive="" plot="Tras la tragedia en Los Gemelos los reinos se reorganizan, y Daenerys es aclamada por los esclavos liberados." duration="" icon="" thumb="" fanart=""/>
+    </folder>
+    <folder name="Temporada 4" mediatype="season" season="4" year="2014"
+            plot="Cuarta temporada. Una boda real en Desembarco del Rey y una amenaza creciente en el Muro."
+            icon="" thumb="" poster="" fanart="">
+        <item title="4x01 · Dos espadas" season="4" episode="1" originaltitle="Two Swords"
+              drive="" plot="Tywin hace forjar dos espadas, llega a la corte Oberyn Martell y Joffrey se prepara para su boda." duration="" icon="" thumb="" fanart=""/>
+        <item title="4x02 · El león y la rosa" season="4" episode="2" originaltitle="The Lion and the Rose"
+              drive="" plot="Se celebra la boda de Joffrey y Margaery, un acontecimiento que cambia el curso del poder." duration="" icon="" thumb="" fanart=""/>
+        <item title="4x03 · Rompedora de cadenas" season="4" episode="3" originaltitle="Breaker of Chains"
+              drive="" plot="Tras la boda real, Tyrion queda en una posición difícil y Daenerys continúa su marcha hacia Meereen." duration="" icon="" thumb="" fanart=""/>
+        <item title="4x04 · Guardián del juramento" season="4" episode="4" originaltitle="Oathkeeper"
+              drive="" plot="Jaime encarga a Brienne una misión, Daenerys llega a Meereen y en el Muro los hermanos de la Guardia afrontan una traición." duration="" icon="" thumb="" fanart=""/>
+        <item title="4x05 · Primero de su nombre" season="4" episode="5" originaltitle="First of His Name"
+              drive="" plot="Tommen es coronado rey, Arya viaja con el Perro y Sansa llega al Nido de Águilas." duration="" icon="" thumb="" fanart=""/>
+        <item title="4x06 · Las leyes de dioses y hombres" season="4" episode="6" originaltitle="The Laws of Gods and Men"
+              drive="" plot="Tyrion es juzgado en Desembarco del Rey y Daenerys escucha a los ciudadanos de Meereen." duration="" icon="" thumb="" fanart=""/>
+        <item title="4x07 · Sinsajo" season="4" episode="7" originaltitle="Mockingbird"
+              drive="" plot="Tyrion busca un campeón para un juicio por combate y Sansa se enfrenta a Petyr en el Nido de Águilas." duration="" icon="" thumb="" fanart=""/>
+        <item title="4x08 · La Montaña y la Víbora" season="4" episode="8" originaltitle="The Mountain and the Viper"
+              drive="" plot="El juicio por combate de Tyrion se decide en Desembarco del Rey y Arya y el Perro llegan al Nido de Águilas." duration="" icon="" thumb="" fanart=""/>
+        <item title="4x09 · Los vigilantes del Muro" season="4" episode="9" originaltitle="The Watchers on the Wall"
+              drive="" plot="La Guardia de la Noche resiste el ataque de un ejército salvaje en Castillo Negro." duration="" icon="" thumb="" fanart=""/>
+        <item title="4x10 · Los niños" season="4" episode="10" originaltitle="The Children"
+              drive="" plot="Tras la batalla varias historias convergen: Bran busca al cuervo de tres ojos, Tyrion afronta su destino y Arya toma su propio camino." duration="" icon="" thumb="" fanart=""/>
+    </folder>
+    <folder name="Temporada 5" mediatype="season" season="5" year="2015"
+            plot="Quinta temporada. El poder se reordena en Desembarco del Rey mientras Daenerys gobierna Meereen."
+            icon="" thumb="" poster="" fanart="">
+        <item title="5x01 · Las guerras por venir" season="5" episode="1" originaltitle="The Wars to Come"
+              drive="" plot="Tyrion y Varys parten de Pentos, Cersei y los Tyrell se disputan la influencia en la corte y Daenerys gobierna Meereen." duration="" icon="" thumb="" fanart=""/>
+        <item title="5x02 · La casa de blanco y negro" season="5" episode="2" originaltitle="The House of Black and White"
+              drive="" plot="Arya llega a Braavos y comienza una nueva etapa, mientras Jaime y Bronn parten hacia Dorne." duration="" icon="" thumb="" fanart=""/>
+        <item title="5x03 · El Gorrión Supremo" season="5" episode="3" originaltitle="High Sparrow"
+              drive="" plot="El Gorrión Supremo gana poder en Desembarco del Rey y Jon Nieve afronta decisiones en el Muro." duration="" icon="" thumb="" fanart=""/>
+        <item title="5x04 · Hijos de la Arpía" season="5" episode="4" originaltitle="Sons of the Harpy"
+              drive="" plot="Los Hijos de la Arpía golpean a Daenerys en Meereen y Jaime y Bronn llegan a Dorne." duration="" icon="" thumb="" fanart=""/>
+        <item title="5x05 · Mata al chico" season="5" episode="5" originaltitle="Kill the Boy"
+              drive="" plot="Jon Nieve toma una decisión arriesgada, Daenerys afronta un dilema en Meereen y Tyrion cruza el mar con Jorah." duration="" icon="" thumb="" fanart=""/>
+        <item title="5x06 · Sin doblegar, sin inclinarse, sin quebrarse" season="5" episode="6" originaltitle="Unbowed, Unbent, Unbroken"
+              drive="" plot="Jaime y Bronn se enfrentan a las Serpientes de Arena en Dorne y Daenerys busca la paz en Meereen." duration="" icon="" thumb="" fanart=""/>
+        <item title="5x07 · El regalo" season="5" episode="7" originaltitle="The Gift"
+              drive="" plot="Jon Nieve y Sam afrontan cambios en el Muro mientras Cersei y los Tyrell se enfrentan en Desembarco del Rey." duration="" icon="" thumb="" fanart=""/>
+        <item title="5x08 · Hardhome" season="5" episode="8" originaltitle="Hardhome"
+              drive="" plot="Jon Nieve viaja a Hardhome en busca de aliados salvajes y se encuentra con una amenaza terrible." duration="" icon="" thumb="" fanart=""/>
+        <item title="5x09 · La danza de dragones" season="5" episode="9" originaltitle="The Dance of Dragons"
+              drive="" plot="Stannis toma una decisión desgarradora y Daenerys se ve atrapada en una arena de Meereen." duration="" icon="" thumb="" fanart=""/>
+        <item title="5x10 · La piedad de la madre" season="5" episode="10" originaltitle="Mother's Mercy"
+              drive="" plot="Se cierran varias tramas: Cersei afronta su castigo, Stannis llega a Invernalia y Arya y Jon enfrentan decisiones decisivas." duration="" icon="" thumb="" fanart=""/>
+    </folder>
+    <folder name="Temporada 6" mediatype="season" season="6" year="2016"
+            plot="Sexta temporada. Las casas luchan por recuperar su lugar mientras el norte se prepara para la guerra."
+            icon="" thumb="" poster="" fanart="">
+        <item title="6x01 · La mujer roja" season="6" episode="1" originaltitle="The Red Woman"
+              drive="" plot="Castillo Negro afronta las consecuencias de un hecho trágico, Sansa y Theon escapan de Invernalia y Dorne vive su propia crisis." duration="" icon="" thumb="" fanart=""/>
+        <item title="6x02 · Hogar" season="6" episode="2" originaltitle="Home"
+              drive="" plot="Bran explora el pasado con el cuervo de tres ojos, Cersei afronta el duelo y Tyrion gobierna Meereen." duration="" icon="" thumb="" fanart=""/>
+        <item title="6x03 · Rompejuramentos" season="6" episode="3" originaltitle="Oathbreaker"
+              drive="" plot="Jon toma una determinación tras lo ocurrido, y Sansa y Theon son socorridos por Brienne y Podrick." duration="" icon="" thumb="" fanart=""/>
+        <item title="6x04 · El libro del extraño" season="6" episode="4" originaltitle="Book of the Stranger"
+              drive="" plot="Sansa y Jon se reencuentran en el Muro y Daenerys afronta una situación inesperada con los dothrakis." duration="" icon="" thumb="" fanart=""/>
+        <item title="6x05 · La puerta" season="6" episode="5" originaltitle="The Door"
+              drive="" plot="Un recuerdo del pasado de Bran revela un secreto doloroso, mientras Arya y Daenerys avanzan en sus caminos." duration="" icon="" thumb="" fanart=""/>
+        <item title="6x06 · Sangre de mi sangre" season="6" episode="6" originaltitle="Blood of My Blood"
+              drive="" plot="Sam vuelve a casa, Arya vive un cambio en Braavos y en Desembarco del Rey se enfrentan Cersei y el Gorrión Supremo." duration="" icon="" thumb="" fanart=""/>
+        <item title="6x07 · El hombre roto" season="6" episode="7" originaltitle="The Broken Man"
+              drive="" plot="Sandor Clegane encuentra un nuevo camino, Brienne busca aliados para Sansa y Arya prepara su futuro." duration="" icon="" thumb="" fanart=""/>
+        <item title="6x08 · Nadie" season="6" episode="8" originaltitle="No One"
+              drive="" plot="Jaime y Brienne se enfrentan a un asedio en Aguasdulces y Arya vive una situación límite en Braavos." duration="" icon="" thumb="" fanart=""/>
+        <item title="6x09 · La batalla de los bastardos" season="6" episode="9" originaltitle="Battle of the Bastards"
+              drive="" plot="Jon y Sansa se enfrentan a Ramsay Bolton en una batalla decisiva por Invernalia." duration="" icon="" thumb="" fanart=""/>
+        <item title="6x10 · Los vientos del invierno" season="6" episode="10" originaltitle="The Winds of Winter"
+              drive="" plot="Un juicio en Desembarco del Rey desemboca en un giro de poder, Jon es proclamado rey en el norte y Daenerys zarpa hacia Poniente." duration="" icon="" thumb="" fanart=""/>
+    </folder>
+    <folder name="Temporada 7" mediatype="season" season="7" year="2017"
+            plot="Séptima temporada. Daenerys llega a Poniente y se acerca el invierno."
+            icon="" thumb="" poster="" fanart="">
+        <item title="7x01 · Rocadragón" season="7" episode="1" originaltitle="Dragonstone"
+              drive="" plot="Daenerys llega por fin a Rocadragón, Jon y Sansa gobiernan en Invernalia y Cersei refuerza su dominio." duration="" icon="" thumb="" fanart=""/>
+        <item title="7x02 · Nacida de la tormenta" season="7" episode="2" originaltitle="Stormborn"
+              drive="" plot="Daenerys reúne a sus aliados y traza su plan de guerra mientras Sam avanza en sus estudios." duration="" icon="" thumb="" fanart=""/>
+        <item title="7x03 · La justicia de la reina" season="7" episode="3" originaltitle="The Queen's Justice"
+              drive="" plot="Jon Nieve se reúne con Daenerys en Rocadragón mientras Cersei da un golpe a sus enemigos." duration="" icon="" thumb="" fanart=""/>
+        <item title="7x04 · Los botines de guerra" season="7" episode="4" originaltitle="The Spoils of War"
+              drive="" plot="Los ejércitos chocan en un enfrentamiento inesperado y Bran regresa a Invernalia." duration="" icon="" thumb="" fanart=""/>
+        <item title="7x05 · Guardia Oriental" season="7" episode="5" originaltitle="Eastwatch"
+              drive="" plot="Daenerys planea una expedición mientras Jon propone capturar a un caminante blanco." duration="" icon="" thumb="" fanart=""/>
+        <item title="7x06 · Más allá del Muro" season="7" episode="6" originaltitle="Beyond the Wall"
+              drive="" plot="Un grupo se adentra más allá del Muro para capturar a un caminante blanco y se enfrenta a un gran peligro." duration="" icon="" thumb="" fanart=""/>
+        <item title="7x07 · El dragón y el lobo" season="7" episode="7" originaltitle="The Dragon and the Wolf"
+              drive="" plot="Los grandes líderes se reúnen en Desembarco del Rey para parlamentar ante la amenaza del norte." duration="" icon="" thumb="" fanart=""/>
+    </folder>
+    <folder name="Temporada 8" mediatype="season" season="8" year="2019"
+            plot="Octava y última temporada. La batalla final por Poniente decide el destino del Trono de Hierro."
+            icon="" thumb="" poster="" fanart="">
+        <item title="8x01 · Invernalia" season="8" episode="1" originaltitle="Winterfell"
+              drive="" plot="Daenerys y Jon llegan a Invernalia mientras el norte se prepara ante el avance del Rey de la Noche." duration="" icon="" thumb="" fanart=""/>
+        <item title="8x02 · Un caballero de los Siete Reinos" season="8" episode="2" originaltitle="A Knight of the Seven Kingdoms"
+              drive="" plot="Los defensores de Invernalia se preparan para la batalla que se avecina." duration="" icon="" thumb="" fanart=""/>
+        <item title="8x03 · La larga noche" season="8" episode="3" originaltitle="The Long Night"
+              drive="" plot="Invernalia se enfrenta al ejército de los muertos en una batalla decisiva." duration="" icon="" thumb="" fanart=""/>
+        <item title="8x04 · Los últimos de los Stark" season="8" episode="4" originaltitle="The Last of the Starks"
+              drive="" plot="Tras la batalla, los supervivientes celebran y empiezan a trazar el camino hacia Desembarco del Rey." duration="" icon="" thumb="" fanart=""/>
+        <item title="8x05 · Las campanas" season="8" episode="5" originaltitle="The Bells"
+              drive="" plot="El ejército de Daenerys marcha sobre Desembarco del Rey en un asalto que lo cambia todo." duration="" icon="" thumb="" fanart=""/>
+        <item title="8x06 · El Trono de Hierro" season="8" episode="6" originaltitle="The Iron Throne"
+              drive="" plot="Poniente decide su futuro tras el final de la guerra por el Trono de Hierro." duration="" icon="" thumb="" fanart=""/>
+    </folder>
+</tree>
