@@ -28,3 +28,11 @@ msgstr ""
 msgctxt "#30004"
 msgid "Numeric PIN"
 msgstr ""
+
+msgctxt "#30005"
+msgid "Google Drive API key (optional, more reliable)"
+msgstr ""
+
+msgctxt "#30006"
+msgid "Google Drive API key"
+msgstr ""

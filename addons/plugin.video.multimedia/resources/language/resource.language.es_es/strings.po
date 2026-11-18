@@ -28,3 +28,11 @@ msgstr "PIN de la sección Privado (vacío = sin PIN)"
 msgctxt "#30004"
 msgid "Numeric PIN"
 msgstr "PIN numérico"
+
+msgctxt "#30005"
+msgid "Google Drive API key (optional, more reliable)"
+msgstr "Clave API de Google Drive (opcional, más fiable)"
+
+msgctxt "#30006"
+msgid "Google Drive API key"
+msgstr "Clave API de Google Drive"

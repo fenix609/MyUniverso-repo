@@ -6,7 +6,8 @@ DEFAULT_SECTIONS = [
     {"id": "television", "name": "Televisión", "catalog": "Televisión", "private": False, "thumb": "", "fanart": "",
      "submenus": [{"id": "tdt", "name": "TDT", "file": "TDT.xml", "thumb": ""}]},
     {"id": "peliculas_series", "name": "Películas y Series", "catalog": "Películas y Series", "private": False, "thumb": "", "fanart": "",
-     "submenus": [{"id": "prueba", "name": "Prueba", "file": "Prueba.xml", "thumb": ""}]},
+     "submenus": [{"id": "prueba", "name": "Prueba", "file": "Prueba.xml", "thumb": ""},
+                  {"id": "series", "name": "Series", "file": "Series.xml", "thumb": ""}]},
     {"id": "entretenimiento", "name": "Entretenimiento", "catalog": "Entretenimiento", "private": False, "thumb": "", "fanart": "", "submenus": []},
     {"id": "privado", "name": "Privado", "catalog": "Privado", "private": True, "thumb": "", "fanart": "", "submenus": []},
 ]
@@ -25,17 +26,18 @@ def parse_menu(text):
         submenus = []
         for sub in node.findall("submenu"):
             if sub.get("name") and sub.get("file"):
-                submenus.append({"id": sub.get("id") or sub.get("name").lower(), "name": sub.get("name"),
-                                 "file": sub.get("file"), "thumb": sub.get("thumb", "")})
-        sections.append({
+                entry = dict(sub.attrib)
+                entry["id"] = sub.get("id") or sub.get("name").lower()
+                submenus.append(entry)
+        entry = dict(node.attrib)
+        entry.update({
             "id": node.get("id") or name.lower().replace(" ", "_"),
             "name": name,
             "catalog": node.get("catalog") or name,
             "private": (node.get("private", "false").lower() == "true"),
-            "thumb": node.get("thumb", ""),
-            "fanart": node.get("fanart", ""),
             "submenus": submenus,
         })
+        sections.append(entry)
     return sections
 
 
@@ -68,9 +70,27 @@ def parse_list(text):
         items = []
         for it in grp.findall("item"):
             if it.get("url"):
-                items.append({"title": it.get("title") or it.get("name") or it.get("url"), "url": it.get("url"),
-                              "type": it.get("type", ""), "plot": it.get("plot", ""), "thumb": it.get("thumb", ""),
-                              "headers": it.get("headers", ""),
-                              "alts": [a.get("url") for a in it.findall("alt") if a.get("url")]})
+                entry = dict(it.attrib)
+                entry["title"] = it.get("title") or it.get("name") or it.get("url")
+                entry["alts"] = [a.get("url") for a in it.findall("alt") if a.get("url")]
+                items.append(entry)
         groups.append({"name": grp.get("name", "").strip() or "Sin nombre", "items": items})
     return {"groups": groups, "autotest": root.get("autotest", "false").lower() == "true"}
+
+
+def parse_tree(text):
+    """<tree name=".."><folder name=".." icon fanart plot ...><item title drive=".." .../></folder></tree>
+    Cada nodo conserva todos sus atributos (icon, thumb, fanart, plot, year, genre...)."""
+    def node(el):
+        d = dict(el.attrib)
+        d["name"] = d.get("name", "").strip()
+        d["folders"] = [node(c) for c in el.findall("folder")]
+        items = []
+        for it in el.findall("item"):
+            entry = dict(it.attrib)
+            entry["title"] = it.get("title") or it.get("name") or "Sin título"
+            entry["alts"] = [a.get("url") for a in it.findall("alt") if a.get("url")]
+            items.append(entry)
+        d["items"] = items
+        return d
+    return node(_root(text))

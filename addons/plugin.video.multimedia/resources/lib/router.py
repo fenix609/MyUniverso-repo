@@ -16,18 +16,18 @@ def url_for(**kwargs):
 
 
 def _art(item, entry):
-    art = {}
-    if entry.get("thumb"):
-        art["thumb"] = art["icon"] = entry["thumb"]
-    if entry.get("fanart"):
-        art["fanart"] = entry["fanart"]
+    art = media.art_of(entry)
     if art:
         item.setArt(art)
 
 
 def add_folder(label, url, entry=None):
+    entry = entry or {}
     item = xbmcgui.ListItem(label=label)
-    _art(item, entry or {})
+    _art(item, entry)
+    info = media.video_info(entry, label)
+    if len(info) > 1:  # solo si el nodo trae información (plot, year, genre...)
+        item.setInfo("video", info)
     xbmcplugin.addDirectoryItem(HANDLE, url, item, True)
 
 
@@ -36,12 +36,23 @@ def add_media(entry):
     plot = entry.get("plot", "")
     kind, sub, yt_id = media.item_kind(entry)
 
+    if kind == "nolink":
+        item = xbmcgui.ListItem(label=title)
+        _art(item, entry)
+        item.setInfo("video", media.video_info(entry, title))
+        item.setProperty("IsPlayable", "true")
+        xbmcplugin.addDirectoryItem(HANDLE, url_for(action="nolink"), item, False)
+        return
+    if kind == "drive":
+        entry = dict(entry, url=media.drive_url(yt_id, utils.get_setting("drive_api_key")))
+        kind = "video"
+
     if kind == "youtube":
         if sub != "video":
             add_folder(title, media.youtube_url(sub, yt_id), entry)
             return
         item = xbmcgui.ListItem(label=title)
-        item.setInfo("video", {"title": title, "plot": plot})
+        item.setInfo("video", media.video_info(entry, title))
         _art(item, entry)
         item.setProperty("IsPlayable", "true")
         xbmcplugin.addDirectoryItem(HANDLE, media.youtube_url("video", yt_id), item, False)
@@ -49,7 +60,7 @@ def add_media(entry):
 
     if kind == "torrent":
         item = xbmcgui.ListItem(label=title)
-        item.setInfo("video", {"title": title, "plot": plot})
+        item.setInfo("video", media.video_info(entry, title))
         _art(item, entry)
         item.setProperty("IsPlayable", "true")
         xbmcplugin.addDirectoryItem(HANDLE, url_for(action="play", url=entry.get("url", ""), title=title, kind="torrent"), item, False)
@@ -71,7 +82,7 @@ def add_media(entry):
         item.setInfo("music", {"title": title, "artist": entry.get("artist", ""),
                                "album": entry.get("album", "")})
     else:
-        item.setInfo("video", {"title": title, "plot": plot})
+        item.setInfo("video", media.video_info(entry, title))
     item.setProperty("IsPlayable", "true")
     xbmcplugin.addDirectoryItem(HANDLE, url_for(action="play", url=url, title=title, kind=kind), item, False)
 
@@ -156,8 +167,11 @@ def _parse_code_file(file, use_cache=True):
     """Devuelve ('tdt', datos) o ('lista', datos) según el tipo de archivo."""
     text = catalog.load_code_text(file)
     try:
-        if menu.root_tag(text) == "tdt":
+        tag = menu.root_tag(text)
+        if tag == "tdt":
             return "tdt", menu.parse_tdt(text)
+        if tag == "tree":
+            return "tree", menu.parse_tree(text)
         data = menu.parse_list(text)
         if use_cache:
             try:
@@ -174,6 +188,8 @@ def open_submenu(file):
     kind, data = _parse_code_file(file)
     if kind == "tdt":
         list_tdt(file, data)
+    elif kind == "tree":
+        list_tree(file, "", data)
     else:
         list_lista(file, data)
 
@@ -233,6 +249,60 @@ def list_lista_group(file, group):
     xbmcplugin.endOfDirectory(HANDLE)
 
 
+# ---------- árboles (<tree>, p. ej. Series.xml): series > temporadas > episodios ----------
+_CONTENT = {"tvshow": "tvshows", "season": "seasons", "episode": "episodes"}
+
+
+def list_tree(file, path_str, root=None):
+    if root is None:
+        kind, root = _parse_code_file(file)
+        if kind != "tree":
+            root = {"folders": [], "items": []}
+    path = [int(p) for p in path_str.split(".") if p != ""]
+    node = root
+    inherit = {"fanart": root.get("fanart", "")}
+    for idx in path:
+        folders = node.get("folders", [])
+        if idx < 0 or idx >= len(folders):
+            node = {"folders": [], "items": []}
+            break
+        node = folders[idx]
+        if node.get("fanart"):
+            inherit["fanart"] = node["fanart"]
+        if node.get("mediatype") == "tvshow":
+            inherit["tvshowtitle"] = node.get("name", "")
+        if node.get("season"):
+            inherit["season"] = node["season"]
+
+    def with_inherited(entry):
+        entry = dict(entry)
+        for key, value in inherit.items():
+            if value and not entry.get(key):
+                entry[key] = value
+        return entry
+
+    for idx, folder in enumerate(node.get("folders", [])):
+        add_folder(folder.get("name", "Sin nombre"),
+                   url_for(action="tree", file=file, path=".".join(map(str, path + [idx]))),
+                   with_inherited(folder))
+    for entry in node.get("items", []):
+        add_media(with_inherited(entry))
+    if node.get("items"):
+        content = "episodes"
+    elif node.get("folders"):
+        content = _CONTENT.get(node["folders"][0].get("mediatype", ""), "files")
+    else:
+        content = "files"
+    xbmcplugin.setContent(HANDLE, content)
+    xbmcplugin.addSortMethod(HANDLE, xbmcplugin.SORT_METHOD_UNSORTED)
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def no_link():
+    utils.notify("Este episodio todavía no tiene enlace de Drive")
+    xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+
+
 def start_auto_test(file):
     """Lanza la prueba en segundo plano (puede durar minutos) y deja la lista como estaba."""
     xbmc.executebuiltin("RunPlugin({})".format(url_for(action="auto_run", file=file)))
@@ -255,6 +325,10 @@ def run(argv, menu_url=None):
     elif action == "auto_run":
         from . import autotest
         autotest.run(params.get("file", ""))
+    elif action == "tree":
+        list_tree(params.get("file", ""), params.get("path", ""))
+    elif action == "nolink":
+        no_link()
     elif action == "listgroup":
         list_lista_group(params.get("file", ""), params.get("group", ""))
     elif action == "tdtgroup":

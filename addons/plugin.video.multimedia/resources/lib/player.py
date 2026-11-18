@@ -11,6 +11,8 @@ from . import media, utils
 def build_listitem(url, title="", kind="video"):
     item = xbmcgui.ListItem(label=title, path=url)
     clean = url.split("|")[0].lower()
+    if "google.com" in clean or "googleapis.com" in clean:
+        item.setContentLookup(False)  # Drive no responde bien al HEAD previo de Kodi
     if ".m3u8" in clean:
         item.setProperty("inputstream", "inputstream.adaptive")
         item.setProperty("inputstream.adaptive.manifest_type", "hls")

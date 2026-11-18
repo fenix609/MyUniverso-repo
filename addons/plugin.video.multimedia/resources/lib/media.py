@@ -2,7 +2,7 @@
 """Utilidades puras: tipo de medio, enlaces de YouTube y listas M3U."""
 import re
 import unicodedata
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, quote
 
 AUDIO_EXT = (".mp3", ".flac", ".wav", ".ogg", ".oga", ".opus", ".m4a", ".aac", ".wma", ".ape", ".alac", ".aiff", ".mka")
 IMAGE_EXT = (".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tif", ".tiff", ".heic", ".avif")
@@ -56,8 +56,89 @@ def youtube_url(kind, yt_id):
     return "{}channel/{}/".format(YT_PLUGIN, yt_id)
 
 
+# ---------- Google Drive ----------
+_DRIVE_HOSTS = ("drive.google.com", "docs.google.com", "drive.usercontent.google.com")
+_DRIVE_ID = re.compile(r"^[A-Za-z0-9_-]{20,}$")
+_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+
+
+def drive_id(entry):
+    """ID de archivo de Drive a partir de `drive` (enlace o ID) o de un `url` de Drive."""
+    value = (entry.get("drive") or "").strip()
+    if not value:
+        url = (entry.get("url") or "").strip()
+        if urlparse(url).netloc.lower() in _DRIVE_HOSTS:
+            value = url
+    if not value:
+        return ""
+    if "://" not in value:
+        return value if _DRIVE_ID.match(value) else ""
+    parsed = urlparse(value)
+    if parsed.netloc.lower() not in _DRIVE_HOSTS:
+        return ""
+    query = parse_qs(parsed.query)
+    if query.get("id"):
+        return query["id"][0]
+    parts = [p for p in parsed.path.split("/") if p]
+    if "d" in parts and parts.index("d") + 1 < len(parts):
+        return parts[parts.index("d") + 1]
+    return ""
+
+
+def drive_url(file_id, api_key=""):
+    """Enlace directo de reproducción para un archivo de Drive con permiso 'cualquiera con el enlace'."""
+    if api_key:
+        return "https://www.googleapis.com/drive/v3/files/{}?alt=media&key={}".format(file_id, quote(api_key, safe=""))
+    return "https://drive.usercontent.google.com/download?id={}&export=download&confirm=t|User-Agent={}".format(
+        file_id, quote(_UA, safe=""))
+
+
+# ---------- arte e información ----------
+ART_KEYS = ("thumb", "icon", "poster", "fanart", "banner", "clearlogo", "landscape")
+_TEXT_INFO = ("plot", "genre", "mpaa", "studio", "director", "writer", "premiered", "aired", "tagline",
+              "originaltitle", "tvshowtitle", "country", "mediatype")
+
+
+def art_of(entry):
+    art = {k: entry[k] for k in ART_KEYS if entry.get(k)}
+    if "thumb" not in art and "icon" in art:
+        art["thumb"] = art["icon"]
+    if "icon" not in art and "thumb" in art:
+        art["icon"] = art["thumb"]
+    return art
+
+
+def video_info(entry, title):
+    """Diccionario para ListItem.setInfo('video', ...) a partir de los atributos del elemento."""
+    info = {"title": title}
+    for key in _TEXT_INFO:
+        if entry.get(key):
+            info[key] = entry[key]
+    for key in ("year", "season", "episode"):
+        try:
+            info[key] = int(entry[key])
+        except (KeyError, TypeError, ValueError):
+            pass
+    try:
+        info["rating"] = float(entry["rating"])
+    except (KeyError, TypeError, ValueError):
+        pass
+    try:
+        info["duration"] = int(float(entry["duration"]) * 60)  # en el XML, minutos
+    except (KeyError, TypeError, ValueError):
+        pass
+    if "mediatype" not in info and "episode" in info:
+        info["mediatype"] = "episode"
+    return info
+
+
 def item_kind(entry):
     """Devuelve ('youtube', subtipo, id) o ('audio'|'image'|'video', None, None)."""
+    fid = drive_id(entry)
+    if fid:
+        return ("drive", None, fid)
+    if "drive" in entry and not any(entry.get(k) for k in ("url", "youtube", "drive")):
+        return ("nolink", None, None)  # episodio sin enlace todavía
     yt = parse_youtube(entry.get("youtube") or entry.get("url", ""))
     if yt:
         return ("youtube", yt[0], yt[1])
