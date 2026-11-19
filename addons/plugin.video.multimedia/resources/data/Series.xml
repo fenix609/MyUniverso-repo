@@ -1,50 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Series > Juego de Tronos > Temporada 1.
+<!-- Series: lista de series.
 
-     ESTRUCTURA: <folder> dentro de <folder> (serie > temporada) y <item> (episodios).
+     Cada <folder> es una serie. Si lleva file="X.xml", al abrirla el addon carga ese archivo
+     (de esta misma carpeta Código de GitHub) y muestra sus temporadas. Ejemplo:
+       <folder name="Juego de Tronos" file="Juego de Tronos.xml" .../>
+     Para añadir otra serie: crea su XML (copia "Juego de Tronos.xml"), súbelo a Código y añade aquí una línea <folder ... file="..."/>.
+     Si no pones file, puedes meter las temporadas dentro del propio <folder>.
 
-     ENLACES DE GOOGLE DRIVE (en cada <item>):
-       drive="..."  pega el enlace de compartir completo (https://drive.google.com/file/d/ID/view?usp=sharing)
-                    o solo el ID del archivo. El archivo debe estar compartido como "Cualquier persona con el enlace".
-       Si drive="" el episodio aparece, pero avisa de que aún no tiene enlace.
-       (Opcional) en los ajustes del addon puedes poner una clave API de Google Drive: es más fiable
-       con archivos grandes y cuando Drive limita las descargas.
-
-     IMÁGENES (en cualquier <folder> o <item>; todas son URL y opcionales):
-       icon, thumb, poster, fanart, banner, clearlogo.  Si falta fanart, hereda el de la carpeta superior.
+     IMÁGENES (en cualquier <folder>; todas son URL y opcionales):
+       icon, thumb, poster, fanart, banner, clearlogo.
        Pueden ser enlaces de GitHub raw: https://raw.githubusercontent.com/fenix609/Addon-multimedia/main/Imagenes/...
 
-     INFORMACIÓN (opcional): plot, year, genre, studio, director, rating (0-10), duration (minutos),
-       mpaa, premiered (AAAA-MM-DD), tagline, originaltitle.
-       mediatype = tvshow | season | episode; season="1" y episode="N" en cada episodio. -->
+     INFORMACIÓN (opcional): plot, year, genre, studio, rating (0-10), mpaa, premiered (AAAA-MM-DD), tagline, originaltitle.
+       mediatype = tvshow. -->
 <tree name="Series">
-    <folder name="Juego de Tronos" mediatype="tvshow" originaltitle="Game of Thrones" year="2011"
+    <folder name="Juego de Tronos" file="Juego de Tronos.xml" mediatype="tvshow" originaltitle="Game of Thrones" year="2011"
             genre="Fantasía, Drama, Aventura" studio="HBO"
             plot="Siete familias nobles se disputan el control de los Siete Reinos mientras una antigua amenaza despierta en el norte."
-            icon="" thumb="" poster="" fanart="" banner="" clearlogo="">
-        <folder name="Temporada 1" mediatype="season" season="1" year="2011"
-                plot="Primera temporada. Los Stark, los Lannister y los Targaryen entran en una lucha por el Trono de Hierro."
-                icon="" thumb="" poster="" fanart="">
-            <item title="1x01 · Winter Is Coming" season="1" episode="1" originaltitle="Winter Is Coming"
-                  drive="" plot="" duration="" icon="" thumb="" fanart=""/>
-            <item title="1x02 · The Kingsroad" season="1" episode="2" originaltitle="The Kingsroad"
-                  drive="" plot="" duration="" icon="" thumb="" fanart=""/>
-            <item title="1x03 · Lord Snow" season="1" episode="3" originaltitle="Lord Snow"
-                  drive="" plot="" duration="" icon="" thumb="" fanart=""/>
-            <item title="1x04 · Cripples, Bastards, and Broken Things" season="1" episode="4" originaltitle="Cripples, Bastards, and Broken Things"
-                  drive="" plot="" duration="" icon="" thumb="" fanart=""/>
-            <item title="1x05 · The Wolf and the Lion" season="1" episode="5" originaltitle="The Wolf and the Lion"
-                  drive="" plot="" duration="" icon="" thumb="" fanart=""/>
-            <item title="1x06 · A Golden Crown" season="1" episode="6" originaltitle="A Golden Crown"
-                  drive="" plot="" duration="" icon="" thumb="" fanart=""/>
-            <item title="1x07 · You Win or You Die" season="1" episode="7" originaltitle="You Win or You Die"
-                  drive="" plot="" duration="" icon="" thumb="" fanart=""/>
-            <item title="1x08 · The Pointy End" season="1" episode="8" originaltitle="The Pointy End"
-                  drive="" plot="" duration="" icon="" thumb="" fanart=""/>
-            <item title="1x09 · Baelor" season="1" episode="9" originaltitle="Baelor"
-                  drive="" plot="" duration="" icon="" thumb="" fanart=""/>
-            <item title="1x10 · Fire and Blood" season="1" episode="10" originaltitle="Fire and Blood"
-                  drive="" plot="" duration="" icon="" thumb="" fanart=""/>
-        </folder>
-    </folder>
+            icon="" thumb="https://i.imgur.com/GFtmo9n.png" poster="" fanart="https://i.imgur.com/PUE5NS8.jpg" banner="" clearlogo=""/>
 </tree>

@@ -139,6 +139,8 @@ def parse_tree(text):
                     d["url"] = d[key]
                     break
         d["alts"] = [a.get("url") for a in el.findall("alt") if a.get("url")]
+        d["sources"] = [{"name": (c.get("name") or "").strip(), "url": c.get("url").strip()}
+                        for c in el.findall("source") if (c.get("url") or "").strip()]  # otros servidores
         return d
 
     def node(el):

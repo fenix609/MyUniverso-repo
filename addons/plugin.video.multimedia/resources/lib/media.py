@@ -132,13 +132,73 @@ def video_info(entry, title):
     return info
 
 
+# ---------- varios servidores por vídeo ----------
+# Atributos del XML que admiten un enlace: drive="", mega="", terabox="", vidoza="", gamovideo="".
+SERVER_ATTRS = (("drive", "Google Drive"), ("mega", "Mega"), ("terabox", "TeraBox"),
+                ("vidoza", "Vidoza"), ("gamovideo", "Gamovideo"))
+_HOSTERS = {
+    "mega.nz": "Mega", "mega.co.nz": "Mega",
+    "terabox.com": "TeraBox", "1024terabox.com": "TeraBox", "teraboxapp.com": "TeraBox",
+    "1024tera.com": "TeraBox", "terafileshare.com": "TeraBox", "4funbox.com": "TeraBox", "mirrobox.com": "TeraBox",
+    "vidoza.net": "Vidoza", "vidoza.org": "Vidoza",
+    "gamovideo.com": "Gamovideo",
+    "streamtape.com": "Streamtape", "voe.sx": "Voe", "filemoon.sx": "Filemoon", "mixdrop.co": "Mixdrop",
+    "upstream.to": "Upstream", "dood.wf": "Doodstream", "doodstream.com": "Doodstream",
+    "streamwish.to": "Streamwish", "filelions.to": "Filelions",
+}
+
+
+def host_name(url):
+    """Nombre del servidor si el enlace es de uno conocido (Mega, TeraBox, Vidoza...); si no, ''."""
+    host = urlparse(url if "://" in url else "https://" + url).netloc.lower().split(":")[0]
+    if host in _DRIVE_HOSTS:
+        return "Google Drive"
+    for domain, name in _HOSTERS.items():
+        if host == domain or host.endswith("." + domain):
+            return name
+    return ""
+
+
+def server_sources(entry):
+    """Lista de {'name','url'} con todos los enlaces del vídeo: drive/mega/terabox/vidoza/gamovideo,
+    url (si es de un servidor conocido o hay más enlaces) y los <source name= url=> hijos."""
+    out = []
+    for key, name in SERVER_ATTRS:
+        value = (entry.get(key) or "").strip()
+        if not value:
+            continue
+        if key == "drive":
+            fid = drive_id({"drive": value})
+            value = "https://drive.google.com/file/d/{}/view".format(fid) if fid else value
+        out.append({"name": name, "url": value})
+    for src in entry.get("sources") or []:
+        out.append({"name": src.get("name") or host_name(src["url"]) or "Enlace", "url": src["url"]})
+    url = (entry.get("url") or "").strip()
+    if url and not drive_id({"url": url}) and (host_name(url) or out):
+        out.append({"name": host_name(url) or "Enlace directo", "url": url})
+    seen, unique = set(), []
+    for src in out:
+        if src["url"] not in seen:
+            seen.add(src["url"])
+            unique.append(src)
+    return unique
+
+
+def needs_server_picker(sources):
+    """True si el vídeo se reproduce con la lógica de servidores (varios enlaces o un servidor que no es Drive)."""
+    if not sources:
+        return False
+    return len(sources) > 1 or host_name(sources[0]["url"]) not in ("", "Google Drive")
+
+
 def item_kind(entry):
     """Devuelve ('youtube', subtipo, id) o ('audio'|'image'|'video', None, None)."""
     fid = drive_id(entry)
     if fid:
         return ("drive", None, fid)
-    if "drive" in entry and not any(entry.get(k) for k in ("url", "youtube", "drive")):
-        return ("nolink", None, None)  # episodio sin enlace todavía
+    if any(k in entry for k, _ in SERVER_ATTRS) and not server_sources(entry) \
+            and not any(entry.get(k) for k in ("url", "youtube")):
+        return ("nolink", None, None)  # vídeo o episodio sin enlace todavía
     yt = parse_youtube(entry.get("youtube") or entry.get("url", ""))
     if yt:
         return ("youtube", yt[0], yt[1])

@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+import json
 from urllib.parse import urlencode, parse_qsl
 
 import xbmc
 import xbmcgui
 import xbmcplugin
 
-from . import catalog, media, menu, player, probe, utils
+from . import catalog, hosters, media, menu, player, probe, utils
 
 HANDLE = -1
 BASE = ""
@@ -34,6 +35,15 @@ def add_folder(label, url, entry=None):
 def add_media(entry):
     title = entry.get("title") or entry.get("name") or "Sin título"
     plot = entry.get("plot", "")
+    sources = media.server_sources(entry)
+    if media.needs_server_picker(sources):  # Mega, TeraBox, Vidoza, Gamovideo... o varios enlaces
+        item = xbmcgui.ListItem(label=title)
+        _art(item, entry)
+        item.setInfo("video", media.video_info(entry, title))
+        item.setProperty("IsPlayable", "true")
+        pairs = json.dumps([[x["name"], x["url"]] for x in sources], ensure_ascii=False)
+        xbmcplugin.addDirectoryItem(HANDLE, url_for(action="play_src", src=pairs, title=title), item, False)
+        return
     kind, sub, yt_id = media.item_kind(entry)
 
     if kind == "nolink":
@@ -314,7 +324,7 @@ def list_tree(file, path_str, root=None, carried=None):
         file, path_str, len(node.get("folders", [])), len(node.get("items", [])), sin_enlace,
         "sí" if utils.drive_proxy_base() else "no"))
     if node.get("items"):
-        content = "episodes"
+        content = "episodes" if any(e.get("episode") for e in node["items"]) else "videos"
     elif node.get("folders"):
         content = _CONTENT.get(node["folders"][0].get("mediatype", ""), "files")
     else:
@@ -325,9 +335,36 @@ def list_tree(file, path_str, root=None, carried=None):
 
 
 def no_link(title=""):
-    utils.log("'{}': sin enlace de Drive (drive vacío o no reconocido)".format(title))
-    utils.notify("Este episodio todavía no tiene enlace de Drive")
+    utils.log("'{}': sin enlace (drive, mega, terabox, vidoza, gamovideo, url... vacíos o no reconocidos)".format(title))
+    utils.notify("Este vídeo todavía no tiene enlace")
     xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+
+
+def play_sources(src_json, title=""):
+    """Reproduce un vídeo con varios servidores: si hay más de uno, pregunta cuál usar."""
+    try:
+        pairs = json.loads(src_json)
+    except ValueError:
+        pairs = []
+    if not pairs:
+        no_link(title)
+        return
+    idx = 0
+    if len(pairs) > 1:
+        idx = xbmcgui.Dialog().select("Elige servidor", [name for name, _ in pairs])
+        if idx < 0:
+            xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+            return
+    name, link = pairs[idx]
+    utils.log("play '{}' servidor={} destino={}".format(title, name, utils.safe_url(link)))
+    try:
+        url, kind = hosters.resolve(link)
+    except hosters.ResolveError as exc:
+        utils.log("'{}' ({}): {}".format(title, name, exc), error=True)
+        utils.notify("{}: {}".format(name, exc)[:120], error=True)
+        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        return
+    player.resolve(HANDLE, url, title, kind)
 
 
 def start_auto_test(file):
@@ -357,6 +394,8 @@ def run(argv, menu_url=None):
                   carried={"fanart": params.get("fanart", ""), "tvshow": params.get("tvshow", "")})
     elif action == "nolink":
         no_link(params.get("title", ""))
+    elif action == "play_src":
+        play_sources(params.get("src", ""), params.get("title", ""))
     elif action == "listgroup":
         list_lista_group(params.get("file", ""), params.get("group", ""))
     elif action == "tdtgroup":

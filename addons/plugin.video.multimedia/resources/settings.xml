@@ -25,6 +25,12 @@
                     <constraints><allowempty>true</allowempty></constraints>
                     <control type="edit" format="string"><heading>30006</heading></control>
                 </setting>
+                <setting id="terabox_cookie" type="string" label="30008">
+                    <level>0</level>
+                    <default></default>
+                    <constraints><allowempty>true</allowempty></constraints>
+                    <control type="edit" format="string"><heading>30009</heading></control>
+                </setting>
             </group>
         </category>
     </section>

@@ -10,8 +10,9 @@
         <submenu id="tdt" name="TDT" file="TDT.xml"/>
     </section>
     <section id="peliculas_series" name="Películas y Series" catalog="Películas y Series" thumb="" fanart="">
-        <submenu id="series" name="Series" file="Series.xml" icon="" fanart="" plot="Series con episodios alojados en Google Drive."/>
+        <submenu id="series" name="Series" file="Series.xml" icon="" fanart="" plot="Series con episodios en Google Drive, Mega, TeraBox, Vidoza, Gamovideo..."/>
         <submenu id="prueba" name="Prueba" file="Prueba.xml"/>
+        <submenu id="servidores" name="Prueba servidores" file="Prueba servidores.xml" plot="Tres vídeos de ejemplo para probar Drive, Mega, TeraBox, Vidoza y Gamovideo."/>
     </section>
     <section id="entretenimiento" name="Entretenimiento" catalog="Entretenimiento" thumb="" fanart=""/>
     <section id="privado" name="Privado" catalog="Privado" private="true" thumb="" fanart=""/>

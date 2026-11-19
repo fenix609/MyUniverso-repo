@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Prueba servidores: tres vídeos de ejemplo para comprobar que funcionan los enlaces de cada servidor.
+     Todos los enlaces están vacíos: pega los tuyos entre las comillas. Los vacíos se ignoran.
+       Prueba 1  ->  Google Drive + Mega          (2 servidores: Kodi pregunta cuál usar)
+       Prueba 2  ->  TeraBox                      (necesita la cookie 'ndus' en los ajustes del addon)
+       Prueba 3  ->  Vidoza + Gamovideo           (2 servidores; necesita el addon ResolveURL)
+
+     Formas de poner los enlaces en cualquier <item> (películas, episodios...):
+       drive="enlace o ID"  mega="https://mega.nz/file/ID#CLAVE"  terabox="https://www.terabox.com/s/..."
+       vidoza="https://vidoza.net/xxxx.html"  gamovideo="https://gamovideo.com/xxxx"
+       o, para cualquier otro servidor, líneas <source name="Nombre" url="enlace"/> dentro del <item>.
+     Si pones varios enlaces en el mismo vídeo, al reproducir Kodi te deja elegir el servidor.
+     Escribe & como &amp; dentro de las URL.
+     Un vídeo sin ningún enlace avisa de que todavía no tiene. -->
+<tree name="Prueba servidores">
+    <item title="Prueba 1 · Google Drive y Mega" plot="Comprueba Google Drive y Mega en el mismo vídeo (aparece el selector de servidor si rellenas los dos)."
+          drive="" mega="" icon="" thumb="" fanart=""/>
+    <item title="Prueba 2 · TeraBox" plot="Comprueba un enlace de TeraBox. Necesita la cookie 'ndus' en los ajustes del addon."
+          terabox="" icon="" thumb="" fanart=""/>
+    <item title="Prueba 3 · Vidoza y Gamovideo" plot="Comprueba Vidoza y Gamovideo (necesitan el addon ResolveURL instalado)."
+          vidoza="" gamovideo="" icon="" thumb="" fanart=""/>
+</tree>
