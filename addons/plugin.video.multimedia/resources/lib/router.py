@@ -256,14 +256,17 @@ def list_lista_group(file, group):
 _CONTENT = {"tvshow": "tvshows", "season": "seasons", "episode": "episodes"}
 
 
-def list_tree(file, path_str, root=None):
+def list_tree(file, path_str, root=None, carried=None):
     if root is None:
         kind, root = _parse_code_file(file)
         if kind != "tree":
             root = {"folders": [], "items": []}
     path = [int(p) for p in path_str.split(".") if p != ""]
     node = root
-    inherit = {"fanart": root.get("fanart", "")}
+    carried = carried or {}
+    inherit = {"fanart": carried.get("fanart") or root.get("fanart", "")}
+    if carried.get("tvshow"):
+        inherit["tvshowtitle"] = carried["tvshow"]
     for idx in path:
         folders = node.get("folders", [])
         if idx < 0 or idx >= len(folders):
@@ -285,11 +288,27 @@ def list_tree(file, path_str, root=None):
         return entry
 
     for idx, folder in enumerate(node.get("folders", [])):
-        add_folder(folder.get("name", "Sin nombre"),
-                   url_for(action="tree", file=file, path=".".join(map(str, path + [idx]))),
-                   with_inherited(folder))
+        target = folder.get("file")
+        carry = {k: v for k, v in (("fanart", inherit.get("fanart") if not folder.get("fanart") else folder["fanart"]),
+                                   ("tvshow", inherit.get("tvshowtitle") or (folder.get("name") if folder.get("mediatype") == "tvshow" else "")))
+                 if v} if (target or carried) else {}
+        if target and not folder.get("folders") and not folder.get("items"):
+            url = url_for(action="tree", file=target, path="", **carry)  # el contenido de esta carpeta está en otro archivo
+        else:
+            url = url_for(action="tree", file=file, path=".".join(map(str, path + [idx])), **carry)
+        add_folder(folder.get("name", "Sin nombre"), url, with_inherited(folder))
     for entry in node.get("items", []):
         add_media(with_inherited(entry))
+    if not node.get("folders") and not node.get("items"):
+        nombre = node.get("name") or file
+        desconocidas = sorted(set(node.get("unknown") or []))
+        atributos = sorted(k for k in node if k not in ("folders", "items", "unknown", "name") and node[k])
+        msg = ("Carpeta: {}\nArchivo: {} ({})\nContiene: 0 carpetas y 0 episodios\n"
+               "Etiquetas que no reconozco: {}\nAtributos de la carpeta: {}").format(
+            nombre, file, catalog.SOURCES.get(file, "origen desconocido"),
+            ", ".join(desconocidas) or "ninguna", ", ".join(atributos) or "ninguno")
+        utils.log(msg.replace("\n", " | "), error=True)
+        xbmcgui.Dialog().ok("multimedia: carpeta vacía", msg)
     sin_enlace = sum(1 for e in node.get("items", []) if media.item_kind(e)[0] == "nolink")
     utils.log("{} ruta '{}': {} carpetas, {} elementos ({} sin enlace), proxy Drive: {}".format(
         file, path_str, len(node.get("folders", [])), len(node.get("items", [])), sin_enlace,
@@ -334,7 +353,8 @@ def run(argv, menu_url=None):
         from . import autotest
         autotest.run(params.get("file", ""))
     elif action == "tree":
-        list_tree(params.get("file", ""), params.get("path", ""))
+        list_tree(params.get("file", ""), params.get("path", ""),
+                  carried={"fanart": params.get("fanart", ""), "tvshow": params.get("tvshow", "")})
     elif action == "nolink":
         no_link(params.get("title", ""))
     elif action == "listgroup":

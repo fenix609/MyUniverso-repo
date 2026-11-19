@@ -102,16 +102,26 @@ def code_base():
     return MENU_URL.rsplit("/", 1)[0] + "/" if MENU_URL else ""
 
 
+SOURCES = {}  # nombre de archivo -> "GitHub, N bytes" / "copia local"
+
+
 def load_code_text(name):
     """Texto de un archivo de la carpeta Código desde GitHub; si falla, copia local del addon."""
     base = code_base()
     if base:
         try:
-            return fetch_text(base + quote(name))
+            text = fetch_text(base + quote(name))
+            utils.log("{} leído de GitHub ({} bytes)".format(name, len(text.encode("utf-8"))))
+            SOURCES[name] = "GitHub, {} bytes".format(len(text.encode("utf-8")))
+            return text
         except Exception as exc:
             utils.log("'{}' no disponible en GitHub: {}".format(name, exc))
     try:
-        return read_local(name)
+        text = read_local(name)
+        utils.log("{} leído de la copia incluida en el addon (no se pudo leer de GitHub)".format(name))
+        SOURCES[name] = "copia incluida en el addon, NO de GitHub"
+        return text
     except Exception as exc:
         utils.log("'{}' local no disponible: {}".format(name, exc), error=True)
+        SOURCES[name] = "NO se pudo leer: ni de GitHub ni de la copia del addon (¿el archivo existe en la carpeta Código?)"
         return ""

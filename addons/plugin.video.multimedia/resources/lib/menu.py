@@ -102,7 +102,7 @@ def parse_tdt(text):
 
 
 def root_tag(text):
-    return _root(text).tag
+    return _root(text).tag.lower()
 
 
 def parse_list(text):
@@ -122,19 +122,37 @@ def parse_list(text):
     return {"groups": groups, "autotest": root.get("autotest", "false").lower() == "true"}
 
 
+_FOLDER_TAGS = {"folder", "carpeta", "serie", "series", "temporada", "season", "grupo", "group", "categoria", "categoría", "submenu"}
+_ITEM_TAGS = {"item", "episodio", "episode", "capitulo", "capítulo", "video", "vídeo", "pelicula", "película"}
+
+
 def parse_tree(text):
     """<tree name=".."><folder name=".." icon fanart plot ...><item title drive=".." .../></folder></tree>
-    Cada nodo conserva todos sus atributos (icon, thumb, fanart, plot, year, genre...)."""
+    Cada nodo conserva todos sus atributos (icon, thumb, fanart, plot, year, genre...).
+    Acepta las etiquetas en mayúsculas o en español (carpeta, temporada, episodio...) y name/nombre, title/titulo."""
+    def item(el):
+        d = dict(el.attrib)
+        d["title"] = d.get("title") or d.get("titulo") or d.get("name") or d.get("nombre") or "Sin título"
+        if not (d.get("url") or d.get("drive")):
+            for key in ("enlace", "link", "ruta"):
+                if d.get(key):
+                    d["url"] = d[key]
+                    break
+        d["alts"] = [a.get("url") for a in el.findall("alt") if a.get("url")]
+        return d
+
     def node(el):
         d = dict(el.attrib)
-        d["name"] = d.get("name", "").strip()
-        d["folders"] = [node(c) for c in el.findall("folder")]
-        items = []
-        for it in el.findall("item"):
-            entry = dict(it.attrib)
-            entry["title"] = it.get("title") or it.get("name") or "Sin título"
-            entry["alts"] = [a.get("url") for a in it.findall("alt") if a.get("url")]
-            items.append(entry)
-        d["items"] = items
+        d["name"] = (d.get("name") or d.get("nombre") or d.get("title") or d.get("titulo") or "").strip()
+        d["file"] = (d.get("file") or d.get("archivo") or d.get("xml") or "").strip()  # el contenido está en otro archivo
+        d["folders"], d["items"], d["unknown"] = [], [], []
+        for child in el:
+            tag = child.tag.lower()
+            if tag in _FOLDER_TAGS:
+                d["folders"].append(node(child))
+            elif tag in _ITEM_TAGS:
+                d["items"].append(item(child))
+            else:
+                d["unknown"].append(child.tag)
         return d
     return node(_root(text))
