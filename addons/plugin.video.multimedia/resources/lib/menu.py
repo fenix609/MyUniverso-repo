@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """Lee menú.xml (menú principal) y TDT.xml (submenú TDT)."""
+import re
 import xml.etree.ElementTree as ET
+
+# '&' sin escapar (p. ej. en enlaces pegados a mano) -> '&amp;'
+_BARE_AMP = re.compile(r"&(?!(?:amp|lt|gt|quot|apos|#[0-9]+|#x[0-9a-fA-F]+);)")
 
 DEFAULT_SECTIONS = [
     {"id": "television", "name": "Televisión", "catalog": "Televisión", "private": False, "thumb": "", "fanart": "",
@@ -13,8 +17,48 @@ DEFAULT_SECTIONS = [
 ]
 
 
+# --- reparación de atributos mal escritos (comillas dobles dentro de un texto, '<' suelto) ---
+_TAG = re.compile(r"<([A-Za-z_][\w:.-]*)(\s.*?)?(/?)>(?=\s*(?:<|$))", re.DOTALL)  # una etiqueta acaba en ">" seguido de otra etiqueta
+_ATTR = re.compile(r'\s*([\w:.-]+)\s*=\s*"(.*?)"(?=\s+[\w:.-]+\s*=\s*"|\s*$)', re.DOTALL)
+
+
+def _fix_value(value):
+    value = _BARE_AMP.sub("&amp;", value)
+    return value.replace('"', "&quot;").replace("<", "&lt;")
+
+
+def _fix_tag(match):
+    name, attrs, slash = match.group(1), match.group(2) or "", match.group(3)
+    pos, parts = 0, []
+    for attr in _ATTR.finditer(attrs):
+        if attrs[pos:attr.start()].strip():
+            return match.group(0)  # algo raro entre atributos: no se toca
+        parts.append(' {}="{}"'.format(attr.group(1), _fix_value(attr.group(2))))
+        pos = attr.end()
+    if attrs[pos:].strip():
+        return match.group(0)
+    return "<{}{}{}>".format(name, "".join(parts), slash)
+
+
+def repair_xml(text):
+    """Escapa comillas dobles y '<' que alguien escribió dentro de un valor (plot="Dice "hola" ..."). """
+    pieces = re.split(r"(<!--.*?-->|<\?.*?\?>)", text, flags=re.DOTALL)
+    for i in range(0, len(pieces), 2):  # los comentarios y la cabecera XML no se tocan
+        pieces[i] = _TAG.sub(_fix_tag, pieces[i])
+    return "".join(pieces)
+
+
 def _root(text):
-    return ET.fromstring(text.encode("utf-8") if isinstance(text, str) else text)
+    if isinstance(text, bytes):
+        text = text.decode("utf-8")
+    text = _BARE_AMP.sub("&amp;", text.lstrip("\ufeff"))
+    try:
+        return ET.fromstring(text.encode("utf-8"))
+    except ET.ParseError as first:
+        try:
+            return ET.fromstring(repair_xml(text).encode("utf-8"))
+        except ET.ParseError:
+            raise first  # se muestra el error original (línea y columna reales)
 
 
 def parse_menu(text):

@@ -14,6 +14,11 @@
                     <constraints><allowempty>true</allowempty></constraints>
                     <control type="edit" format="string"><heading>30004</heading></control>
                 </setting>
+                <setting id="drive_proxy" type="boolean" label="30007">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
                 <setting id="drive_api_key" type="string" label="30005">
                     <level>0</level>
                     <default></default>

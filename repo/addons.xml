@@ -92,7 +92,7 @@
         <language>es</language>
     </extension>
 </addon>
-<addon id="plugin.video.multimedia" name="multimedia" version="1.8.7" provider-name="fenix609">
+<addon id="plugin.video.multimedia" name="multimedia" version="1.8.9" provider-name="fenix609">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="plugin.video.youtube"/>
@@ -101,10 +101,11 @@
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>video audio image</provides>
     </extension>
+    <extension point="xbmc.service" library="service.py"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="es_ES">multimedia</summary>
         <description lang="es_ES">Reproduce vídeo, música, fotos, listas M3U y torrents. El catálogo se carga desde GitHub (fenix609/MyUniverso-repo).</description>
-        <news>1.8.7: Series carga cada serie desde su propio XML (Juego de Tronos.xml) con sus 8 temporadas, en español.</news>
+        <news>1.8.9: proxy local para Drive, para que Kodi no se cuelgue al pulsar stop.</news>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>

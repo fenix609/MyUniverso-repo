@@ -73,9 +73,15 @@ def load_menu():
     candidates += [MENU_BASE + quote(name) for name in MENU_FILES]
     for url in candidates:
         try:
-            return menu.parse_menu(fetch_text(url))
+            text = fetch_text(url)
         except Exception as exc:
             utils.log("Menú remoto '{}' no disponible: {}".format(url, exc))
+            continue
+        try:
+            return menu.parse_menu(text)
+        except Exception as exc:
+            utils.log("menú.xml con error: {}".format(exc), error=True)
+            utils.notify("menú.xml tiene un error: {}".format(exc), error=True)
     try:
         return menu.parse_menu(read_local("menu.xml"))
     except Exception as exc:

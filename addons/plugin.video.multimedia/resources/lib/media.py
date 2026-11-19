@@ -85,12 +85,12 @@ def drive_id(entry):
     return ""
 
 
-def drive_url(file_id, api_key=""):
+def drive_url(file_id, api_key="", headers=True):
     """Enlace directo de reproducción para un archivo de Drive con permiso 'cualquiera con el enlace'."""
     if api_key:
         return "https://www.googleapis.com/drive/v3/files/{}?alt=media&key={}".format(file_id, quote(api_key, safe=""))
-    return "https://drive.usercontent.google.com/download?id={}&export=download&confirm=t|User-Agent={}".format(
-        file_id, quote(_UA, safe=""))
+    url = "https://drive.usercontent.google.com/download?id={}&export=download&confirm=t".format(file_id)
+    return url + "|User-Agent={}".format(quote(_UA, safe="")) if headers else url
 
 
 # ---------- arte e información ----------

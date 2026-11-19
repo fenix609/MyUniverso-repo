@@ -44,7 +44,9 @@ def add_media(entry):
         xbmcplugin.addDirectoryItem(HANDLE, url_for(action="nolink"), item, False)
         return
     if kind == "drive":
-        entry = dict(entry, url=media.drive_url(yt_id, utils.get_setting("drive_api_key")))
+        proxy = utils.drive_proxy_base()  # con proxy local Kodi no se queda esperando a Drive al parar
+        direct = media.drive_url(yt_id, utils.get_setting("drive_api_key"))
+        entry = dict(entry, url="{}/drive/{}".format(proxy, yt_id) if proxy else direct)
         kind = "video"
 
     if kind == "youtube":
@@ -181,6 +183,7 @@ def _parse_code_file(file, use_cache=True):
         return "lista", data
     except Exception as exc:
         utils.log("'{}' inválido: {}".format(file, exc), error=True)
+        utils.notify("Error en {}: {}".format(file, exc), error=True)
         return "lista", {"groups": [], "autotest": False}
 
 
@@ -261,8 +264,6 @@ def list_tree(file, path_str, root=None):
     path = [int(p) for p in path_str.split(".") if p != ""]
     node = root
     inherit = {"fanart": root.get("fanart", "")}
-    if root.get("mediatype") == "tvshow" or root.get("tvshowtitle"):  # raíz de un XML propio de una serie
-        inherit["tvshowtitle"] = root.get("tvshowtitle") or root.get("name", "")
     for idx in path:
         folders = node.get("folders", [])
         if idx < 0 or idx >= len(folders):
@@ -284,11 +285,9 @@ def list_tree(file, path_str, root=None):
         return entry
 
     for idx, folder in enumerate(node.get("folders", [])):
-        if folder.get("file"):  # la carpeta se abre desde otro XML de Código (p. ej. Juego de Tronos.xml)
-            url = url_for(action="tree", file=folder["file"], path="")
-        else:
-            url = url_for(action="tree", file=file, path=".".join(map(str, path + [idx])))
-        add_folder(folder.get("name", "Sin nombre"), url, with_inherited(folder))
+        add_folder(folder.get("name", "Sin nombre"),
+                   url_for(action="tree", file=file, path=".".join(map(str, path + [idx]))),
+                   with_inherited(folder))
     for entry in node.get("items", []):
         add_media(with_inherited(entry))
     if node.get("items"):

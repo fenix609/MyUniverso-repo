@@ -36,3 +36,7 @@ msgstr "Clave API de Google Drive (opcional, más fiable)"
 msgctxt "#30006"
 msgid "Google Drive API key"
 msgstr "Clave API de Google Drive"
+
+msgctxt "#30007"
+msgid "Use a local proxy for Drive (avoids Kodi freezing on stop)"
+msgstr "Usar proxy local para Drive (evita que Kodi se cuelgue al parar)"

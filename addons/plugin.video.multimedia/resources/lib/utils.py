@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import socket
 
 import xbmc
 import xbmcgui
@@ -38,3 +39,17 @@ def profile_dir():
     if not os.path.isdir(path):
         os.makedirs(path)
     return path
+
+
+def drive_proxy_base():
+    """http://127.0.0.1:PUERTO si el proxy local de Drive está activo y responde; si no, ''."""
+    if not get_bool("drive_proxy", True):
+        return ""
+    port = xbmcgui.Window(10000).getProperty("multimedia.drive_proxy_port")
+    if not port:
+        return ""
+    try:
+        socket.create_connection(("127.0.0.1", int(port)), timeout=0.5).close()
+    except (OSError, ValueError):
+        return ""
+    return "http://127.0.0.1:{}".format(port)
