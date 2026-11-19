@@ -41,7 +41,7 @@ def add_media(entry):
         _art(item, entry)
         item.setInfo("video", media.video_info(entry, title))
         item.setProperty("IsPlayable", "true")
-        xbmcplugin.addDirectoryItem(HANDLE, url_for(action="nolink"), item, False)
+        xbmcplugin.addDirectoryItem(HANDLE, url_for(action="nolink", title=title), item, False)
         return
     if kind == "drive":
         proxy = utils.drive_proxy_base()  # con proxy local Kodi no se queda esperando a Drive al parar
@@ -290,6 +290,10 @@ def list_tree(file, path_str, root=None):
                    with_inherited(folder))
     for entry in node.get("items", []):
         add_media(with_inherited(entry))
+    sin_enlace = sum(1 for e in node.get("items", []) if media.item_kind(e)[0] == "nolink")
+    utils.log("{} ruta '{}': {} carpetas, {} elementos ({} sin enlace), proxy Drive: {}".format(
+        file, path_str, len(node.get("folders", [])), len(node.get("items", [])), sin_enlace,
+        "sí" if utils.drive_proxy_base() else "no"))
     if node.get("items"):
         content = "episodes"
     elif node.get("folders"):
@@ -301,7 +305,8 @@ def list_tree(file, path_str, root=None):
     xbmcplugin.endOfDirectory(HANDLE)
 
 
-def no_link():
+def no_link(title=""):
+    utils.log("'{}': sin enlace de Drive (drive vacío o no reconocido)".format(title))
     utils.notify("Este episodio todavía no tiene enlace de Drive")
     xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
 
@@ -331,7 +336,7 @@ def run(argv, menu_url=None):
     elif action == "tree":
         list_tree(params.get("file", ""), params.get("path", ""))
     elif action == "nolink":
-        no_link()
+        no_link(params.get("title", ""))
     elif action == "listgroup":
         list_lista_group(params.get("file", ""), params.get("group", ""))
     elif action == "tdtgroup":
@@ -339,6 +344,8 @@ def run(argv, menu_url=None):
     elif action == "folder":
         list_folder(params.get("path", ""))
     elif action == "play":
+        utils.log("play '{}' kind={} destino={}".format(params.get("title", ""), params.get("kind", "video"),
+                                                       utils.safe_url(params.get("url", ""))))
         player.resolve(HANDLE, params["url"], params.get("title", ""), params.get("kind", "video"))
     else:
         list_root()

@@ -14,8 +14,11 @@ PROPERTY = "multimedia.drive_proxy_port"
 def main():
     monitor = xbmc.Monitor()
     home = xbmcgui.Window(10000)
+    addon = xbmcaddon.Addon()  # se crea aquí, en el hilo del servicio, y no en los hilos del proxy
     try:
-        server = driveproxy.make_server(lambda: xbmcaddon.Addon().getSetting("drive_api_key"))
+        server = driveproxy.make_server(
+            lambda: addon.getSetting("drive_api_key"),
+            log=lambda msg: xbmc.log("[multimedia] Proxy Drive: {}".format(msg), xbmc.LOGINFO))
     except OSError as exc:
         xbmc.log("[multimedia] No se pudo iniciar el proxy de Drive: {}".format(exc), xbmc.LOGERROR)
         return

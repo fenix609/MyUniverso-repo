@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 import socket
+import time
+from urllib.parse import urlparse
 
 import xbmc
 import xbmcgui
@@ -41,15 +43,28 @@ def profile_dir():
     return path
 
 
+def safe_url(url):
+    """Dirección sin parámetros (ni claves API) para escribirla en el log."""
+    parts = urlparse((url or "").split("|")[0])
+    return "{}://{}{}".format(parts.scheme, parts.netloc, parts.path) if parts.scheme else (url or "")[:60]
+
+
+_PROXY = {"t": 0.0, "v": ""}
+
+
 def drive_proxy_base():
     """http://127.0.0.1:PUERTO si el proxy local de Drive está activo y responde; si no, ''."""
     if not get_bool("drive_proxy", True):
         return ""
+    if time.time() - _PROXY["t"] < 5:  # una lista de episodios llama muchas veces seguidas
+        return _PROXY["v"]
+    value = ""
     port = xbmcgui.Window(10000).getProperty("multimedia.drive_proxy_port")
-    if not port:
-        return ""
-    try:
-        socket.create_connection(("127.0.0.1", int(port)), timeout=0.5).close()
-    except (OSError, ValueError):
-        return ""
-    return "http://127.0.0.1:{}".format(port)
+    if port:
+        try:
+            socket.create_connection(("127.0.0.1", int(port)), timeout=0.5).close()
+            value = "http://127.0.0.1:{}".format(port)
+        except (OSError, ValueError):
+            value = ""
+    _PROXY.update(t=time.time(), v=value)
+    return value

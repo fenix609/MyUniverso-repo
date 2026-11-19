@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.video.multimedia" name="multimedia" version="1.8.9" provider-name="fenix609">
+<addon id="plugin.video.multimedia" name="multimedia" version="1.8.10" provider-name="fenix609">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="plugin.video.youtube"/>
@@ -12,7 +12,7 @@
     <extension point="xbmc.addon.metadata">
         <summary lang="es_ES">multimedia</summary>
         <description lang="es_ES">Reproduce vídeo, música, fotos, listas M3U y torrents. El catálogo se carga desde GitHub (fenix609/MyUniverso-repo).</description>
-        <news>1.8.9: proxy local para Drive, para que Kodi no se cuelgue al pulsar stop.</news>
+        <news>1.8.10: el proxy de Drive avisa con el motivo si Drive no sirve el archivo y vuelve al modo directo si falla.</news>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
