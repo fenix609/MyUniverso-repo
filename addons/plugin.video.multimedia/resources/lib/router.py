@@ -6,7 +6,7 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 
-from . import catalog, hosters, media, menu, player, probe, utils
+from . import balandro_bridge, catalog, hosters, media, menu, player, probe, utils
 
 HANDLE = -1
 BASE = ""
@@ -122,6 +122,10 @@ def open_section(section_id):
             xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
             return
     extras = [(sub["name"], url_for(action="submenu", file=sub["file"]), sub) for sub in sec.get("submenus", [])]
+    if sec["id"] == "peliculas_series" and not any(str(s.get("file", "")).startswith("balandro:") for s in sec.get("submenus", [])):
+        for kind in ("search", "main", "movies", "tvshows", "manage"):  # Servidores, si menú.xml no lo define ya
+            label, plot = balandro_bridge.KINDS[kind]
+            extras.append((label, url_for(action="submenu", file="balandro:" + kind), {"plot": plot}))
     idx = catalog.find_category(catalog.load_root(), sec["catalog"])
     if idx < 0:
         if not extras:
@@ -198,6 +202,9 @@ def _parse_code_file(file, use_cache=True):
 
 
 def open_submenu(file):
+    if file.startswith("balandro:"):
+        balandro_bridge.run([BASE, str(HANDLE)], kind=file.split(":", 1)[1] or "main")
+        return
     kind, data = _parse_code_file(file)
     if kind == "tdt":
         list_tdt(file, data)
@@ -378,6 +385,9 @@ def run(argv, menu_url=None):
     BASE, HANDLE = argv[0], int(argv[1])
     if menu_url:
         catalog.MENU_URL = menu_url
+    if len(argv) > 2 and balandro_bridge.is_balandro_query(argv[2]):  # URL generada por Balandro
+        balandro_bridge.run(argv, argv[2])
+        return
     params = dict(parse_qsl(argv[2][1:]))
     action = params.get("action")
     if action == "section":

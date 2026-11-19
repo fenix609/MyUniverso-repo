@@ -1,0 +1,37 @@
+{
+  "id": "videoapp",
+  "name": "Videoapp",
+
+  "active": true,
+
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "https://videoapp.zip/e/movie/([A-z0-9]+)",
+        "url": "https://videoapp.zip/e/movie/\\1"
+      },
+      {
+        "pattern": "https://videoapp.zip/e/tv/([A-z0-9]+)",
+        "url": "https://videoapp.zip/e/tv/\\1"
+      },
+      {
+        "pattern": "https://videoapp.zip/e/anime/([A-z0-9]+)",
+        "url": "https://videoapp.zip/e/anime/\\1"
+      },
+      {
+        "pattern": "https://videoapi.la/e/movie/([A-z0-9]+)",
+        "url": "https://videoapi.la/e/movie/\\1"
+      },
+      {
+        "pattern": "https://videoapi.la/e/tv/([A-z0-9]+)",
+        "url": "https://videoapi.la/e/tv/\\1"
+      },
+      {
+        "pattern": "https://videoapi.la/e/anime/([A-z0-9]+)",
+        "url": "https://videoapi.la/e/anime/\\1"
+      }
+    ]
+  }
+
+}

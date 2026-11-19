@@ -1,0 +1,342 @@
+# -*- coding: utf-8 -*-
+
+import sys
+
+if sys.version_info[0] >= 3:
+    import xbmcvfs
+    translatePath = xbmcvfs.translatePath
+else:
+    import xbmc
+    translatePath = xbmc.translatePath
+
+
+import os, xbmc, time
+
+from platformcode import config, logger, platformtools
+from core import filetools, httptools, scrapertools
+
+
+espera = config.get_setting('servers_waiting', default=6)
+
+
+def import_libs(module):
+    import xbmcaddon
+
+    path = os.path.join(xbmcaddon.Addon(module).getAddonInfo("path"))
+    addon_xml = filetools.read(filetools.join(path, "addon.xml"))
+
+    if addon_xml:
+        require_addons = scrapertools.find_multiple_matches(addon_xml, '(<import addon="[^"]+"[^\\/]+\\/>)')
+        require_addons = list(filter(lambda x: not 'xbmc.python' in x and 'optional="true"' not in x, require_addons))
+
+        for addon in require_addons:
+            addon = scrapertools.find_single_match(addon, 'import addon="([^"]+)"')
+            if xbmc.getCondVisibility('System.HasAddon("%s")' % (addon)):
+                import_libs(addon)
+            else:
+                xbmc.executebuiltin('InstallAddon(%s)' % (addon))
+                import_libs(addon)
+
+        lib_path = scrapertools.find_multiple_matches(addon_xml, 'library="([^"]+)"')
+        for lib in list(filter(lambda x: not '.py' in x, lib_path)):
+            sys.path.append(os.path.join(path, lib))
+
+
+def get_video_url(page_url, url_referer=''):
+    logger.info("(page_url='%s')" % page_url)
+    video_urls = []
+
+    ini_page_url = page_url
+
+    if not xbmc.getCondVisibility('System.HasAddon("script.module.resolveurl")'): return 'Falta ResolveUrl'
+
+    txt_server = 'Unknow'
+
+    if 'abyss' in page_url: txt_server = 'Abyss'
+    elif 'amdahost' in page_url: txt_server = 'Amdahost'
+    elif 'allviid' in page_url: txt_server = 'Allviid'
+    elif 'asianload' in page_url: txt_server = 'Asianload'
+
+    elif 'bigwarp' in page_url or 'bgwp' in page_url:
+          txt_server = 'Bigwarp'
+
+          page_url = page_url.replace('/bigwarp.io/d/', '/bigwarp.io/dl?op=embed&file_code=').replace('/bigwarp.io/e/', '/bigwarp.io/dl?op=embed&file_code=').replace('/bigwarp.io/v/', '/bigwarp.io/dl?op=embed&file_code=').replace('/bigwarp.io/embed-', '/bigwarp.io/dl?op=embed&file_code=')
+
+          page_url = page_url.replace('/bigwarp.cc/d/', '/bigwarp.io/dl?op=embed&file_code=').replace('/bigwarp.cc/e/', '/bigwarp.io/dl?op=embed&file_code=').replace('/bigwarp.cc/v/', '/bigwarp.io/dl?op=embed&file_code=').replace('/bigwarp.cc/embed-', '/bigwarp.io/dl?op=embed&file_code=')
+
+          if not '/dl?op=embed&file_code=' in page_url:
+              page_url = page_url.replace('/bigwarp.io/', '/bigwarp.io/dl?op=embed&file_code=')
+              page_url = page_url.replace('/bigwarp.cc/', '/bigwarp.io/dl?op=embed&file_code=')
+
+          if '.html' in page_url: page_url = page_url.replace('.html', '')
+
+          ini_page_url = page_url
+
+    elif 'bowfile' in page_url: txt_server = 'Bowfile'
+    elif 'cloudfile' in page_url: txt_server = 'Cloudfile'
+    elif 'cloudmail' in page_url: txt_server = 'Cloudmail'
+    elif 'dailyuploads' in page_url: txt_server = 'Dailyuploads'
+    elif 'darkibox' in page_url: txt_server = 'Darkibox'
+    elif 'dembed' in page_url or 'asianplay' in page_url: txt_server = 'Dembed'
+    elif 'downace' in page_url: txt_server = 'Downace'
+    elif 'dzen' in page_url: txt_server = 'Dzen'
+    elif 'fastdrive' in page_url: txt_server = 'Fastdrive'
+    elif 'fastplay' in page_url: txt_server = 'Fastplay'
+    elif 'filegram' in page_url: txt_server = 'Filegram'
+    elif 'gostream' in page_url: txt_server = 'Gostream'
+    elif 'gupload' in page_url: txt_server = 'Gupload'
+    elif 'letsupload' in page_url: txt_server = 'Letsupload'
+    elif 'liivideo' in page_url: txt_server = 'Liivideo'
+    elif 'myupload' in page_url: txt_server = 'Myupload'
+    elif 'neohd' in page_url: txt_server = 'Neohd'
+    elif 'oneupload' in page_url: txt_server = 'Oneupload'
+    elif 'pandafiles' in page_url: txt_server = 'Pandafiles'
+    elif 'rovideo' in page_url: txt_server = 'Rovideo'
+
+    elif 'savefiles' in page_url or 'streamhls' in page_url:
+          txt_server = 'Savefiles'
+
+          page_url = page_url.replace('/savefiles.top/', '/savefiles.com/')
+          page_url = page_url.replace('/streamhls.to/', '/savefiles.com/')
+
+          ini_page_url = page_url
+
+    elif 'send' in page_url: txt_server = 'Send'
+    elif 'streamable' in page_url: txt_server = 'Streamable'
+    elif 'streamdav' in page_url: txt_server = 'Streamdav'
+    elif 'streamcool' in page_url: txt_server = 'Streamcool'
+    elif 'streamgzzz' in page_url: txt_server = 'Streamgzzz'
+
+    elif 'streamix' in page_url or 'stmix' in page_url:
+          txt_server = 'Streamix'
+
+          page_url = page_url.replace('/stmix.io/', '/streamix.so/')
+
+          ini_page_url = page_url
+
+    elif 'vidara' in page_url or 'viewdara' in page_url or 'vidwara' in page_url or 'vidvara' in page_url:
+          txt_server = 'Streamix'
+
+          page_url = page_url.replace('/e/', '/v/')
+
+          page_url = page_url + '$$' + page_url
+
+          ini_page_url = page_url
+
+    elif 'streamoupload' in page_url: txt_server = 'Streamoupload'
+
+    elif 'streamup' in page_url or 'strmup' in page_url:
+          txt_server = 'Streamup'
+
+          page_url = page_url.replace('/streamup.to/', '/streamup.ws/').replace('/streamup.wf/', '/streamup.ws/').replace('/streamup.cc/', '/streamup.ws/')
+          page_url = page_url.replace('/strmup.to/', '/streamup.ws/').replace('/strmup.wf/', '/streamup.ws/').replace('/strmup.cc/', '/streamup.ws/')
+
+          ini_page_url = page_url
+
+    elif 'turbovid' in page_url: txt_server = 'Turbovid'
+    elif 'tusfiles' in page_url: txt_server = 'Tusfiles'
+    elif 'updown' in page_url: txt_server = 'Updown'
+    elif 'uploadbaz' in page_url: txt_server = 'Uploadbaz'
+
+    elif 'uploadflix' in page_url or '1uploadflix' in page_url: txt_server = 'Uploadflix'
+
+    elif 'uploadhub' in page_url:
+          txt_server = 'Uploadhub'
+
+          page_url = page_url.replace('/uploadhub.to/', '/uploadhub.wf/')
+
+          ini_page_url = page_url
+
+    elif 'uploady' in page_url: txt_server = 'Uploady'
+    elif 'upvid' in page_url: txt_server = 'Upvid'
+    elif 'veev' in page_url or 'doods' in page_url: txt_server = 'Veev'
+    elif 'veoh' in page_url: txt_server = 'Veoh'
+    elif 'vidbob' in page_url: txt_server = 'Vidbob'
+    elif 'vidlook' in page_url: txt_server = 'Vidlook'
+    elif 'vidmx' in page_url: txt_server = 'Vidmx'
+    elif 'vidnest' in page_url: txt_server = 'Vidnest'
+    elif 'vido' in page_url: txt_server = 'Vido'
+    elif 'vidpro' in page_url: txt_server = 'Vidpro'
+    elif 'vipss' in page_url: txt_server = 'Vipss'
+    elif 'vkprime' in page_url: txt_server = 'Vkprime'
+    elif 'worlduploads' in page_url: txt_server = 'Worlduploads'
+    elif 'ztreamhub' in page_url: txt_server = 'Ztreamhub'
+    elif 'udrop' in page_url: txt_server = 'Udrop'
+    elif 'videa' in page_url: txt_server = 'Videa'
+    elif 'swiftload' in page_url: txt_server = 'SwiftLoad'
+    elif 'vidtube' in page_url: txt_server = 'Vidtube'
+    elif 'wecima' in page_url: txt_server = 'Wecima'
+
+    elif 'vidbasic' in page_url or 'vidb' in page_url: txt_server = 'Vidbasic'
+
+    elif 'vimeos' in page_url: txt_server = 'Vimeos'
+    elif 'vinovo' in page_url: txt_server = 'Vinovo'
+
+    elif 'bigshare' in page_url: txt_server = 'Bigshare'
+    elif 'vkvideo' in page_url: txt_server = 'Vk'
+
+    elif 'vidsonic' in page_url or 'vixeo' in page_url or 'vsonic' in page_url: txt_server = 'Vidsonic'
+
+    elif txt_server == 'Unknow': return 'Desconocido'
+
+    if config.get_setting('servers_time', default=True):
+        platformtools.dialog_notification('Cargando ' + '[COLOR cyan][B]' + txt_server + '[/B][/COLOR]', 'Espera requerida de %s segundos' % espera)
+        time.sleep(int(espera))
+
+    path = translatePath(os.path.join('special://home/addons/script.module.resolveurl/lib/resolveurl/plugins/', txt_server.lower() + '.py'))
+
+    existe = filetools.exists(path)
+    if not existe: return 'El Plugin No existe en Resolveurl'
+
+    # ~ SEND
+    if txt_server == 'Send':
+        # ~ 28/8/2025  SEND pq CloudFlare Human Verify
+        data = httptools.downloadpage(page_url).data
+
+        if '>Security verification<' in data:
+            return 'CloudFlare Human Verify'
+
+        elif '>Security Check<' in data:
+            return 'CloudFlare Security Check'
+
+    try:
+        import_libs('script.module.resolveurl')
+
+        if xbmc.getCondVisibility('System.HasAddon("script.module.cloudrequest")'):
+            import_libs('script.module.cloudrequest')
+
+        import resolveurl
+        page_url = ini_page_url
+
+        resuelto = resolveurl.resolve(page_url)
+
+        if not resuelto:
+            # ~ 4/7/2026  STREAMIX pq falla ResolveUrl
+            if 'vidara' in page_url:
+                video = vidara(page_url)
+                if video:
+                     video_urls.append(['m3u8', video])
+                     return video_urls
+
+        if resuelto:
+            if resuelto.endswith('.zip') or resuelto.endswith('.rar'):
+                return "El archivo está en formato comprimido"
+
+            elif '.m3u8' in resuelto: video_urls.append(['m3u8', resuelto])
+            elif '.m3u' in resuelto: video_urls.append(['m3u', resuelto])
+            elif '.mp4' in resuelto: video_urls.append(['mp4', resuelto])
+            else: video_urls.append(['', resuelto])
+            return video_urls
+
+        color_exec = config.get_setting('notification_exec_color', default='cyan')
+        el_srv = ('Sin respuesta en [B][COLOR %s]') % color_exec
+        el_srv += ('ResolveUrl[/B][/COLOR]')
+        platformtools.dialog_notification(config.__addon_name, el_srv, time=3000)
+
+        page_url = ini_page_url
+
+        return 'No se pudo Reproducir el Vídeo con ResolveUrl'
+
+    except:
+        import traceback
+        logger.error(traceback.format_exc())
+
+        if txt_server == 'Bigwarp':
+            data = httptools.downloadpage(page_url).data
+            url = scrapertools.find_single_match(str(data), 'file:"(.*?)"')
+
+            if url:
+                # ~ 1/1/2025  Directo pq falla ResolveUrl
+                video_urls = [[url[-4:], url]]
+                return video_urls
+
+        elif txt_server == 'Savefiles':
+           # ~ 30/5/2026  SAVEFILES pq falla ResolveUrl  import cloudscraper
+           video = savefiles(page_url)
+
+           if video:
+               video_urls.append(['m3u8', video])
+               return video_urls
+
+        if 'resolveurl.resolver.ResolverError:' in traceback.format_exc():
+            trace = traceback.format_exc()
+
+            if 'File Removed' in trace or 'File Not Found' in trace or 'The requested video was not found' in trace or 'File deleted' in trace or 'No video found' in trace or 'No playable video found' in trace or 'Video cannot be located' in trace or 'file does not exist' in trace or 'Video not found' in trace or 'Video removed' in trace or 'Stream not found' in trace:
+                return 'Archivo inexistente ó eliminado'
+
+            elif 'No se ha encontrado ningún link al' in trace or 'Unable to locate link' in trace or 'Unable to locate stream' in trace or 'Video Link Not Found' in trace or 'Not Found' in trace:
+                return 'Fichero sin link al vídeo ó restringido'
+
+            elif 'Unable to solve captcha' in trace:
+                return 'Unable Solve Captcha'
+
+            elif '2Captcha API key' in trace:
+                return 'Cloudflare reCAPTCHA'
+
+            elif 'Cloudflare challenge' in trace:
+                return 'Cloudflare Challenge Check'
+
+        elif "No module named 'cloudscraper'" in traceback.format_exc():
+             return 'Falta script.module.cloudrequest'
+
+        elif 'HTTP Error 404: Not Found' in traceback.format_exc() or '404 Not Found' in traceback.format_exc():
+            return 'Archivo inexistente'
+
+        elif 'HTTP Error 403: Forbidden' in traceback.format_exc() or '403 Forbidden' in traceback.format_exc():
+            return 'Archivo bloqueado'
+
+        elif '<urlopen error' in traceback.format_exc():
+            return 'No se puede establecer la conexión'
+
+        elif 'socket.timeout' in traceback.format_exc():
+            return 'Tiempo Máximo de Acceso Excedido'
+
+        elif 'TimeoutError' in traceback.format_exc():
+            return 'Tiempo Máximo de Acceso Excedido'
+
+        return 'Sin Respuesta ' + txt_server
+
+
+def savefiles(page_url):
+    id = page_url.replace('https://savefiles.com/', '').replace('embed-', '').replace('e/', '')
+
+    post = {'op': 'embed', 'file_code': id, 'auto': '0', 'referer': ''}
+
+    headers = {'Referer': page_url}
+
+    resp = httptools.downloadpage('https://savefiles.com/dl', post=post, headers=headers)
+
+    video = scrapertools.find_single_match(resp.data, 'file:"(.*?)"')
+
+    return video
+
+
+def vidara(page_url):
+    resp = httptools.downloadpage(page_url)
+
+    data = resp.data
+
+    if resp.code == 404: return ''
+
+    elif 'File Not Found' in resp.data or 'File is no longer available' in resp.data:
+        return ''
+
+    id = scrapertools.find_single_match(page_url, '/e/([A-z0-9]+)')
+
+    if not id: id = scrapertools.find_single_match(page_url, '/v/([A-z0-9]+)')
+
+    if not id: return ''
+
+    from core.jsontools import json
+
+    post_url = 'https://vidara.to/api/stream'
+
+    post = json.dumps({'filecode': id, 'device': 'web'})
+
+    headers = {'Referer': page_url}
+
+    data = httptools.downloadpage('https://vidara.to/api/stream', post=post, headers = headers).data
+
+    video = scrapertools.find_single_match(data, '"streaming_url":"(.*?)"')
+
+    return video

@@ -1,0 +1,164 @@
+# -*- coding: utf-8 -*-
+
+import sys
+
+PY3 = False
+if sys.version_info[0] >= 3: PY3 = True
+
+if PY3:
+    import urllib.parse as urlparse
+else:
+    import urlparse
+
+
+import re
+
+from platformcode import logger, config
+from core.item import Item
+from core import httptools, scrapertools, tmdb
+
+
+host = 'https://www.ecartelera.com/'
+
+
+def mainlist(item):
+    return mainlist_pelis(item)
+
+
+def mainlist_pelis(item):
+    logger.info()
+    itemlist = []
+
+    itemlist.append(item.clone( title = '[B][COLOR yellow]Buscar[/COLOR][/B] Tráiler ...', action = 'search', search_type = 'movie', text_color = 'darkgoldenrod' ))
+
+    itemlist.append(item.clone( channel='youtubetrailers', action='search', title= '[B][COLOR yellow]Buscar[/COLOR][/B] Youtube ...', thumbnail=config.get_thumb('youtube'), text_color='darksalmon', search_special = 'youtube', search_type = 'all' ))
+
+    itemlist.append(item.clone( title = 'Catálogo', action = 'list_all', url = host + 'videos/', search_type = 'movie' ))
+
+    itemlist.append(item.clone( title = 'Últimos', action = 'list_all', url = host + 'peliculas/', search_type = 'movie', text_color = 'cyan' ))
+
+    return itemlist
+
+
+def list_all(item):
+    logger.info()
+    itemlist = []
+
+    data = httptools.downloadpage(item.url).data
+    data = re.sub(r'\n|\r|\t|\s{2}|&nbsp;', '', data)
+
+    matches = re.compile('<div class="item isvideo"(.*?)</div></div>', re.DOTALL).findall(data)
+    if not matches: matches = re.compile('<div class="mlist-item"(.*?)</div>', re.DOTALL).findall(data)
+
+    for match in matches:
+        url = scrapertools.find_single_match(match, "href='(.*?)'")
+
+        title = scrapertools.find_single_match(match, 'alt="(.*?)"')
+
+        if not url or not title: continue
+
+        thumb = scrapertools.find_single_match(match, 'src="(.*?)"')
+
+        duration = scrapertools.find_single_match(match, '<span class="length">(.*?)</span>')
+
+        title = title.replace('&#039;', '').replace('&quot;', '').replace('&amp;', '').strip()
+
+        titulo = '[COLOR tan]' + duration + '[/COLOR] ' + title
+
+        itemlist.append(item.clone( action = 'findvideos', title = titulo, url = url, thumbnail = thumb, search_type = 'movie' ))
+
+    if itemlist:
+        matches = re.compile('<a href="([^"]+)">Siguiente</a>', re.DOTALL).findall(data)
+
+        for url in matches:
+            itemlist.append(item.clone( title = 'Siguientes ...', url = url, action = 'list_all', text_color='coral' ))
+
+    return itemlist
+
+
+def findvideos(item):
+    logger.info()
+    itemlist = []
+
+    data = httptools.downloadpage(item.url).data
+
+    if '/peliculas/' in item.url:
+        new_url = scrapertools.find_single_match(data, '<div class="pel-trailer"><a href="(.*?)"')
+
+        if new_url: data = httptools.downloadpage(new_url).data
+
+    matches = re.compile('<source src="([^"]+)"', re.DOTALL).findall(data)
+
+    if not matches:
+        new_url = scrapertools.find_single_match(data, '</table>.*?<a href="(.*?)"')
+
+        if new_url:
+            data = httptools.downloadpage(new_url).data
+
+            matches = re.compile('<source src="([^"]+)"', re.DOTALL).findall(data)
+
+    for url in matches:
+        if '/manifest.mpd' in url: continue
+
+        url = urlparse.urljoin(item.url, url)
+
+        itemlist.append(Item( channel = item.channel, action = 'play', server = 'directo', url = url, language = 'VO' ))
+
+    return itemlist
+
+
+def list_search(item):
+    logger.info()
+    itemlist = []
+
+    post = {'q': item.tex, 'tab': 'resumen'}
+
+    data = httptools.downloadpage(host + 'ajax/_typesense/', post = post, headers = {'Referer': host + 'buscar/?q=' + item.tex}).data
+
+    matches = scrapertools.find_multiple_matches(str(data), '"adicionales":(.*?)"coincidencia":')
+
+    for match in matches:
+        if not '"PELI"' in match: continue
+
+        url = scrapertools.find_single_match(str(match), '"url".*?"(.*?)"')
+
+        title = scrapertools.find_single_match(str(match), '"titulos":.*?"(.*?)"')
+
+        if not url or not title: continue
+
+        title = clean_title(title)
+
+        url = host + '/peliculas/' + url
+
+        itemlist.append(item.clone( action='findvideos', url=url, title=title, contentType='movie', contentTitle=title, infoLabels={'year': '-'} ))
+
+    tmdb.set_infoLabels(itemlist)
+
+    return itemlist
+
+
+def clean_title(title):
+    logger.info()
+
+    title = title.replace('\\u00e1', 'a').replace('\\u00c1', 'a').replace('\\u00e9', 'e').replace('\\u00ed', 'i').replace('\\u00f3', 'o').replace('\\u00fa', 'u')
+    title = title.replace('\\u00f1', 'ñ').replace('\\u00bf', '¿').replace('\\u00a1', '¡').replace('\\u00ba', 'º')
+    title = title.replace('\\u00eda', 'a').replace('\\u00f3n', 'o').replace('\\u00fal', 'u').replace('\\u00e0', 'a')
+
+    title = title.replace('\\u2019', "'").replace('\\u00e3o', 'o').replace('\\u010c', 'c').replace('\\u00c9', 'v').replace('\\u00da', 't').replace('\\u0113', 'i').replace('\\u014d', 'v').replace('\\u00d4', '').replace('\\u0130', '').replace('\\u00e8', ' ')
+
+    title = title.replace('\\u00c0', "A").replace('\\u010c0', "C").replace('\\u00c5l', "Islas Al")
+
+    return title
+
+
+def search(item, texto):
+    logger.info()
+    try:
+       item.tex = texto.replace(" ", "+")
+       return list_search(item)
+    except:
+        import sys
+        for line in sys.exc_info():
+            logger.error("%s" % line)
+        return []
+

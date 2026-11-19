@@ -1,0 +1,17 @@
+{
+  "id": "seriesbiblicas",
+  "name": "SeriesBiblicas",
+  "thumbnail": "seriesbiblicas.jpg",
+
+  "active": true,
+
+  "searchable": true,
+  "search_types": ["all", "movie", "tvshow"],
+
+  "categories": ["movie", "tvshow"],
+  "language": ["cast", "lat", "vose"],
+
+  "clusters": ["classic", "lists", "kids", "vos", "bibles"],
+
+  "notes": "Películas y Series. Con temas Bíblicos."
+}

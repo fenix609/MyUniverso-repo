@@ -1,0 +1,17 @@
+{
+  "id": "ytsoficial",
+  "name": "YtsOficial",
+  "thumbnail": "ytsoficial.jpg",
+
+  "active": true,
+
+  "searchable": true,
+  "search_types": ["all", "movie", "tvshow"],
+
+  "categories": ["torrent", "movie", "tvshow"],
+  "language": ["cast", "lat", "vose", "vo"],
+
+  "clusters": ["onlyone", "torrents", "news", "rankings", "countries", "languages", "producers", "lists", "kids", "docs"],
+
+  "notes": "Canal con enlaces Torrent exclusivamente. Películas por géneros y años. Series por Géneros y años."
+}

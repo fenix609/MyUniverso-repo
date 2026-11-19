@@ -1,0 +1,17 @@
+{
+  "id": "elitetorrentnz",
+  "name": "EliteTorrentNz",
+  "thumbnail": "elitetorrentnz.jpg",
+
+  "active": true,
+
+  "searchable": true,
+  "search_types": ["all", "movie", "tvshow"],
+
+  "categories": ["movie", "tvshow", "torrent"],
+  "language": ["cast", "lat", "vose", "vo"],
+
+  "clusters": ["onlyone", "current", "torrents", "qualityes", "languages", "years", "kids", "docs"],
+
+  "notes": "Canal con enlaces Torrent exclusivamente. Películas por géneros. También Series. Puede requerir el uso de proxies en función del país/operadora desde el que se accede."
+}

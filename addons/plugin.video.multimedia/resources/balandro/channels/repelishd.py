@@ -1,0 +1,348 @@
+# -*- coding: utf-8 -*-
+
+import re
+
+from platformcode import config, logger, platformtools
+from core.item import Item
+from core import httptools, scrapertools, tmdb, servertools
+
+
+# ~ 24/10/26  Las Series NO se tratan
+
+host = 'https://repelishd.blog/'
+
+
+# ~ por si viene de enlaces guardados
+ant_hosts = ['https://repelishd.cam/', 'https://repelishd.city/', 'https://repelishd.run/',
+             'https://repelishd.ceo/', 'https://repelishd.fit/', 'https://repelishd.bid/',
+             'https://repelishd.courses/', 'https://repelishd.pics/']
+
+
+domain = config.get_setting('dominio', 'repelishd', default='')
+
+if domain:
+    if domain == host: config.set_setting('dominio', '', 'repelishd')
+    elif domain in str(ant_hosts): config.set_setting('dominio', '', 'repelishd')
+    else: host = domain
+
+
+def item_configurar_proxies(item):
+    color_list_proxies = config.get_setting('channels_list_proxies_color', default='red')
+
+    color_avis = config.get_setting('notification_avis_color', default='yellow')
+    color_exec = config.get_setting('notification_exec_color', default='cyan')
+
+    context = []
+
+    tit = '[COLOR %s]Información proxies[/COLOR]' % color_avis
+    context.append({'title': tit, 'channel': 'helper', 'action': 'show_help_proxies'})
+
+    if config.get_setting('channel_repelishd_proxies', default=''):
+        tit = '[COLOR %s][B]Quitar los proxies del canal[/B][/COLOR]' % color_list_proxies
+        context.append({'title': tit, 'channel': item.channel, 'action': 'quitar_proxies'})
+
+    tit = '[COLOR %s]Ajustes categoría proxies[/COLOR]' % color_exec
+    context.append({'title': tit, 'channel': 'actions', 'action': 'open_settings'})
+
+    plot = 'Es posible que para poder utilizar este canal necesites configurar algún proxy, ya que no es accesible desde algunos países/operadoras.'
+    plot += '[CR]Si desde un navegador web no te funciona el sitio ' + host + ' necesitarás un proxy.'
+    return item.clone( title = '[B]Configurar proxies a usar ...[/B]', action = 'configurar_proxies', folder=False, context=context, plot=plot, text_color='red' )
+
+def quitar_proxies(item):
+    from modules import submnuctext
+    submnuctext._quitar_proxies(item)
+    return True
+
+def configurar_proxies(item):
+    from core import proxytools
+    return proxytools.configurar_proxies_canal(item.channel, host)
+
+
+def do_downloadpage(url, post=None, headers=None, raise_weberror=True):
+    for ant in ant_hosts:
+        url = url.replace(ant, host)
+
+    if not headers: headers = {'Referer': host}
+
+    hay_proxies = False
+    if config.get_setting('channel_repelishd_proxies', default=''): hay_proxies = True
+
+    timeout = None
+    if host in url:
+        if hay_proxies: timeout = config.get_setting('channels_repeat', default=30)
+
+    if not url.startswith(host):
+        data = httptools.downloadpage(url, post=post, headers=headers, timeout=timeout).data
+    else:
+        if hay_proxies:
+            data = httptools.downloadpage_proxy('repelishd', url, post=post, headers=headers, timeout=timeout).data
+        else:
+            data = httptools.downloadpage(url, post=post, headers=headers, timeout=timeout).data
+
+    if not data:
+        if not '/?story=' in url:
+            if config.get_setting('channels_re_charges', default=True): platformtools.dialog_notification('RepelisHd', '[COLOR cyan]Re-Intentando acceso[/COLOR]')
+
+            timeout = config.get_setting('channels_repeat', default=30)
+
+            if hay_proxies:
+                data = httptools.downloadpage_proxy('repelishd', url, post=post, headers=headers, timeout=timeout).data
+            else:
+                data = httptools.downloadpage(url, post=post, headers=headers, timeout=timeout).data
+
+    return data
+
+
+def acciones(item):
+    logger.info()
+    itemlist = []
+
+    domain_memo = config.get_setting('dominio', 'repelishd', default='')
+
+    if domain_memo: url = domain_memo
+    else: url = host
+
+    itemlist.append(item.clone( channel='actions', action='show_latest_domains', title='[COLOR moccasin][B]Últimos Cambios de Dominios[/B][/COLOR]', thumbnail=config.get_thumb('pencil') ))
+
+    itemlist.append(item.clone( channel='helper', action='show_help_domains', title='[B]Información Dominios[/B]', thumbnail=config.get_thumb('help'), text_color='green' ))
+
+    itemlist.append(item.clone( channel='domains', action='test_domain_repelishd', title='Test Web del canal [COLOR yellow][B] ' + url + '[/B][/COLOR]',
+                                from_channel='repelishd', folder=False, text_color='chartreuse' ))
+
+    if domain_memo: title = '[B]Modificar/Eliminar el dominio memorizado[/B]'
+    else: title = '[B]Informar Nuevo Dominio manualmente[/B]'
+
+    itemlist.append(item.clone( channel='domains', action='manto_domain_repelishd', title=title, desde_el_canal = True, folder=False, text_color='darkorange' ))
+
+    itemlist.append(item_configurar_proxies(item))
+
+    itemlist.append(item.clone( channel='actions', action='show_old_domains', title='[COLOR coral][B]Historial Dominios[/B][/COLOR]', channel_id = 'repelishd' ))
+
+    platformtools.itemlist_refresh()
+
+    return itemlist
+
+
+def mainlist(item):
+    return mainlist_pelis(item)
+
+
+def mainlist_pelis(item):
+    logger.info()
+    itemlist = []
+
+    itemlist.append(item.clone( action='acciones', title= '[B]Acciones[/B] [COLOR plum](si no hay resultados)[/COLOR]', text_color='goldenrod' ))
+
+    itemlist.append(item.clone( title = 'Buscar película ...', action = 'search', search_type = 'movie', text_color = 'deepskyblue' ))
+
+    itemlist.append(item.clone( title = 'Catálogo', action = 'list_all', url = host + 'pelicula/', search_type = 'movie' ))
+
+    itemlist.append(item.clone( title = 'Estrenos', action = 'list_all', url = host + 'cine/', search_type = 'movie', text_color='cyan' ))
+
+    itemlist.append(item.clone( title = 'Por idioma', action = 'idiomas', search_type = 'movie' ))
+
+    itemlist.append(item.clone( title = 'Por género', action = 'generos', search_type = 'movie' ))
+
+    return itemlist
+
+
+def idiomas(item):
+    logger.info()
+    itemlist = []
+
+    url_idio = host + 'pelicula/'
+
+    itemlist.append(item.clone( title = 'Castellano', action = 'list_all', url = url_idio + '?language=castellano', text_color = 'deepskyblue' ))
+    itemlist.append(item.clone( title = 'Latino', action = 'list_all', url = url_idio + '?language=latino', text_color = 'deepskyblue' ))
+    itemlist.append(item.clone( title = 'Subtitulado', action = 'list_all', url = url_idio + '?language=sub', text_color = 'deepskyblue' ))
+
+    return itemlist
+
+
+def generos(item):
+    logger.info()
+    itemlist = []
+
+    data = do_downloadpage(host)
+    data = re.sub(r'\n|\r|\t|\s{2}|&nbsp;', '', data)
+
+    bloque = scrapertools.find_single_match(data, '>Géneros<(.*?)</ul>')
+
+    matches = scrapertools.find_multiple_matches(bloque, '<a href="(.*?)".*?>(.*?)</a>')
+
+    for url, title in matches:
+        if title == 'Cine/Estrenos': continue
+        elif title == 'Series': continue
+
+        title = title.capitalize()
+
+        itemlist.append(item.clone( action = 'list_all', title = title, url = url, text_color = 'deepskyblue' ))
+
+    return sorted(itemlist,key=lambda x: x.title)
+
+
+def list_all(item):
+    logger.info()
+    itemlist = []
+
+    data = do_downloadpage(item.url)
+    data = re.sub(r'\n|\r|\t|\s{2}|&nbsp;', '', data)
+
+    bloque = scrapertools.find_single_match(data, 'Añadido recientemente<(.*?)>©')
+
+    matches = re.compile('<article(.*?)</article>').findall(bloque)
+
+    for article in matches:
+        url = scrapertools.find_single_match(article, '<a href="(.*?)"')
+
+        title = scrapertools.find_single_match(article, 'alt="(.*?)"')
+
+        if not url or not title: continue
+
+        title = title.replace("&#8217;", "'").replace("&amp;", '&').replace("&#039;s", "'s")
+
+        thumb = scrapertools.find_single_match(article, '<img src="(.*?)"')
+        if not 'https' in thumb: thumb = host[:-1] + thumb
+
+        qlty = scrapertools.find_single_match(article, '<span class="quality">(.*?)</span>')
+
+        langs = []
+        if '<div class="castellano"' in article: langs.append('Esp')
+        if '<div class="latino"' in article: langs.append('Lat')
+        if '<div class="subtitulado"' in article: langs.append('Vose')
+
+        year = scrapertools.find_single_match(article, '</h3> <span>(.*?)</span>')
+        if not year: year = '-'
+
+        itemlist.append(item.clone( action='findvideos', url=url, title = title, thumbnail = thumb, qualities=qlty, languages=', '.join(langs),
+                                    contentType='movie', contentTitle=title, infoLabels={'year': year} ))
+
+    tmdb.set_infoLabels(itemlist)
+
+    if itemlist:
+        if '<div class="pagination">' in data:
+            next_page = scrapertools.find_single_match(data, '<div class="pagination">.*?</span>.*?<a href="(.*?)"')
+
+            if next_page:
+                if '/page/' in next_page:
+                    itemlist.append(item.clone( title='Siguientes ...', url = next_page, action='list_all', text_color='coral' ))
+
+    return itemlist
+
+
+def findvideos(item):
+    logger.info()
+    itemlist = []
+
+    IDIOMAS = {'castellano': 'Esp', 'español': 'Esp', 'latino': 'Lat', 'subtitulado': 'Vose', 'sub español': 'Vose'}
+
+    lang = item.languages
+
+    if not lang: lang = '?'
+
+    ses = 0
+
+    data = do_downloadpage(item.url)
+    data = re.sub(r'\n|\r|\t|\s{2}|&nbsp;', '', data)
+
+    _id = scrapertools.find_single_match(data, "var imdb = '(.*?)'")
+
+    if not _id: return itemlist
+
+    _url = 'https://playlatinsrc.co/movie/' + _id
+
+    data = do_downloadpage(_url)
+
+    _token = scrapertools.find_single_match(data, 'token: "(.*?)"')
+
+    if not _token: return itemlist
+
+    headers = {'Referer': _url}
+
+    post = {'type': 'movie', 'id': _id, 'token': _token}
+
+    datae = do_downloadpage('https://playlatinsrc.co/api/embed-links', post = post, headers = headers)
+
+    sources = scrapertools.find_multiple_matches(datae, '"id":(.*?)"embed",')
+
+    for source in sources:
+        ses += 1
+
+        if 'castellano' in source or 'español' in source: lang = 'Esp'
+        elif 'latino' in source: lang = 'Lat'
+        elif 'subtitulado' in source: lang = 'Vose'
+        else: lang = '?'
+
+        url = scrapertools.find_multiple_matches(source, '"url": "(.*?)"')
+
+        servidor = servertools.get_server_from_url(url)
+
+        url = servertools.normalize_url(servidor, url)
+
+        other = ''
+        if servidor == 'various': other = servertools.corregir_other(url)
+        elif servidor == 'zures': other = servertools.corregir_zures(url)
+
+        itemlist.append(Item( channel = item.channel, action = 'play', url = url, server = servidor, title = '',
+                              language=lang, other=other ))
+
+    if not itemlist:
+        if not ses == 0:
+            platformtools.dialog_notification(config.__addon_name, '[COLOR tan][B]Sin enlaces Soportados[/B][/COLOR]')
+            return
+
+    return itemlist
+
+
+def play(item):
+    logger.info()
+    itemlist = []
+
+    url = item.url
+
+    if '/vimeus.' in url:
+        url = url.replace('&amp;', '&').strip()
+
+        new_url = url
+
+        data = do_downloadpage(new_url)
+
+        url = scrapertools.find_single_match(data, '"url":"(.*?)"')
+
+    if url:
+        servidor = servertools.get_server_from_url(url)
+
+        if servidor == 'directo':
+            new_server = servertools.corregir_other(url).lower()
+            if new_server.startswith("http"):
+                if not config.get_setting('developer_mode', default=False): return itemlist
+            servidor = new_server
+
+        itemlist.append(item.clone(url = url, server = servidor))
+
+    return itemlist
+
+
+def _news(item):
+    logger.info()
+
+    item.url = host + 'cine/'
+    item.search_type = 'movie'
+
+    return list_all(item)
+
+
+def search(item, texto):
+    logger.info()
+    try:
+        url = host
+
+        if item.search_type == 'movie': url = host + 'pelicula/'
+
+        item.url = url + '?story=' + texto.replace(" ", "+") + '&do=search&subaction=search'
+        return list_all(item)
+    except:
+        import sys
+        for line in sys.exc_info():
+            logger.error("%s" % line)
+        return []

@@ -1,0 +1,17 @@
+{
+  "id": "moviesdvdr",
+  "name": "MoviesDvdr",
+  "thumbnail": "moviesdvdr.jpg",
+
+  "active": false,
+
+  "searchable": true,
+  "search_types": ["movie"],
+
+  "categories": ["movie", "torrent"],
+  "language": ["cast", "vose"],
+
+  "clusters": ["onlyone", "torrents", "docs", "vos"],
+
+  "notes": "Web CERRADA. Canal con enlaces Torrent exclusivamente. Películas por géneros."
+}

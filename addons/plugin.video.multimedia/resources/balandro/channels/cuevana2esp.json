@@ -1,0 +1,17 @@
+{
+  "id": "cuevana2esp",
+  "name": "Cuevana2Esp",
+  "thumbnail": "cuevana2esp.png",
+
+  "active": false,
+
+  "searchable": true,
+  "search_types": ["all", "movie", "tvshow"],
+
+  "categories": ["movie", "tvshow"],
+  "language": ["cast", "lat", "vose"],
+
+  "clusters": ["news", "rankings", "lasts"],
+
+  "notes": "Web CERRADA. Películas por géneros."
+}

@@ -1,0 +1,17 @@
+{
+  "id": "zoowomaniacos",
+  "name": "ZoowoManiacos",
+  "thumbnail": "zoowomaniacos.jpg",
+
+  "active": true,
+
+  "searchable": true,
+  "search_types": ["movie"],
+
+  "categories": ["movie"],
+  "language": ["cast", "lat", "vose", "vo"],
+
+  "clusters": ["suggested", "classic", "lists", "years", "countries", "directors", "kids", "docs", "vos"],
+
+  "notes": "Películas clásicas y cine independiente, por diversos criteríos."
+}

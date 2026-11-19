@@ -1,0 +1,17 @@
+{
+  "id": "estrenoscinesaa",
+  "name": "EstrenosCinesaA",
+  "thumbnail": "estrenoscinesaa.jpg",
+
+  "active": true,
+
+  "searchable": true,
+  "search_types": ["all", "movie", "tvshow"],
+
+  "categories": ["movie", "tvshow"],
+  "language": ["cast"],
+
+  "clusters": ["suggested", "producers", "lists", "kids"],
+
+  "notes": "Películas y Series en Castellano, por géneros. Series por Géneros. Puede requerir el uso de proxies en función del país/operadora desde el que se accede."
+}

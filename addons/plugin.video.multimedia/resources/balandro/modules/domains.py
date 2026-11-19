@@ -1,0 +1,2509 @@
+# -*- coding: utf-8 -*-
+
+import os, xbmc
+
+from platformcode import config, logger, platformtools
+from core import channeltools, httptools, scrapertools, filetools, jsontools
+
+from modules import tester
+
+
+PY3 = False
+if config.get_setting('PY3', default=''): PY3 = True
+
+if PY3:
+    from urllib.parse import unquote
+else:
+    from urlparse import unquote
+
+
+channels_currents = [
+        'animeonline', 'animeyt',
+        'cinecalidad', 'cinecalidadla', 'cinecalidadlol', 'cuevana2', 'cuevana3pro',
+        'divxtotal', 'dontorrents',
+        'elifilms', 'elitetorrent', 'elitetorrentnz', 'ennovelastv', 'entrepeliculasyseries',
+        'grantorrent',
+        'hdfull', 'homecine',
+        'mejortorrentapp', 'mitorrent',
+        'peliculaspro', 
+        'pelisforte', 'pelismart', 'pelispanda', 'pelisplushdlat', 'pelisplushdnz', 'poseidonhd2',
+        'repelishd',
+        'serieskao', 'seriespapayato', 'srnovelas', 'subtorrents'
+        ]
+
+dominioshdfullrecomendados = [
+         'https://hdfull.today/',
+         'https://hdfull.love/',
+         'https://hdfull.org/'
+         ]
+
+dominioshdfull = [
+         'https://hdfull.today/',
+         'https://hdfull.love/',
+         'https://hdfull.org/',
+
+         'https://www3.hdfull.one/',
+         'https://www2.hdfull.one/',
+         'https://hdfull.monster/',
+         'https://hdfull.tel/',
+         'https://hdfull.buzz/',
+         'https://hdfull.sbs/',
+         'https://hdfull.one/',
+
+         'https://new.hdfull.one/'
+         ]
+
+domains_cloudflarehdfull = [
+         'https://www3.hdfull.one/',
+         'https://www2.hdfull.one/',
+         'https://hdfull.cv/',
+         'https://hdfull.monster/',
+         'https://hdfull.tel/',
+         'https://hdfull.buzz/',
+         'https://hdfull.sbs/',
+         'https://hdfull.one/',
+         'https://new.hdfull.one/'
+         ]
+
+ant_hosts_hdfull = [
+         'https://hdfull.sh/', 'https://hdfull.im/', 'https://hdfull.in/',
+         'https://hdfull.pro/', 'https://hdfull.la/', 'https://hdfull.tv/',
+         'https://hd-full.cc/', 'https://hdfull.me/', 'https://hdfull.io/',
+         'https://hdfull.lv/', 'https://hdfullcdn.cc/', 'https://hdfull.stream/',
+         'https://hdfull.click/', 'https://hdfull.lol/', 'https://hdfull.fun/',
+         'https://hdfull.top/', 'https://hdfull.vip/', 'https://hdfull.wtf/',
+         'https://hdfull.gdn/', 'https://hdfull.cloud/', 'https://hdfull.video/',
+         'https://hdfull.work/', 'https://hdfull.life/', 'https://hdfull.digital/',
+         'https://hdfull.store/', 'https://hd-full.in/', 'https://hdfull.icu/',
+         'https://hd-full.im/', 'https://hd-full.one/', 'https://hdfull.link/',
+         'https://hd-full.co/', 'https://hd-full.lol/', 'https://hdfull.quest/',
+         'https://hd-full.info/', 'https://hd-full.sbs/', 'https://hd-full.life/',
+         'https://hd-full.fit/', 'https://hd-full.me/', 'https://hd-full.vip/,'
+         'https://hdfull.blog/', 'https://hdfull.cfd/', 'https://hdfull.help/',
+         'https://hd-full.biz/']
+
+
+color_alert = config.get_setting('notification_alert_color', default='red')
+color_infor = config.get_setting('notification_infor_color', default='pink')
+color_adver = config.get_setting('notification_adver_color', default='violet')
+color_avis = config.get_setting('notification_avis_color', default='yellow')
+color_exec = config.get_setting('notification_exec_color', default='cyan')
+
+
+def hdfull_recomendados(item):
+    dominio = config.get_setting('dominio', 'hdfull', default=dominioshdfull[0])
+
+    num_dominio = dominioshdfull.index(dominio) if dominio in dominioshdfull else 0
+
+    ret = platformtools.dialog_select('Dominios Recomendados HdFull', dominioshdfullrecomendados, preselect=num_dominio)
+
+    if ret == -1: return
+
+    seleccionado = dominioshdfullrecomendados[ret]
+
+    if dominio == seleccionado: return
+
+    if platformtools.dialog_yesno(config.__addon_name + ' - Dominio HdFull', '¿ Desea cambiar el Dominio ?', 'Memorizado:  [COLOR yellow][B]  ' + dominio + '[/B][/COLOR]', 'Seleccionado:   [COLOR cyan][B]' + seleccionado + '[/B][/COLOR]'): 
+        config.set_setting('dominio', seleccionado, 'hdfull')
+
+        if not item.desde_el_canal:
+            if not item.from_action == 'mainlist':
+                platformtools.dialog_ok(config.__addon_name + ' - Dominio HdFull', '[COLOR yellow]Último dominio vigente memorizado, pero aún NO guardado.[/COLOR]', '[COLOR cyan][B]Recuerde, que para que el cambio surta efecto deberá abandonar los Ajustes de Servidores a través de su correspondiente botón --> OK[/B][/COLOR]')
+
+
+def manto_domain_animeonline(item):
+    logger.info()
+
+    channel_json = 'animeonline.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando AnimeOnline[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_animeonline(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('animeonline')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('AnimeOnline')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - AnimeOnline', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_animeyt(item):
+    logger.info()
+
+    channel_json = 'animeyt.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando AnimeYt[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_animeyt(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('animeyt')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('AnimeYt')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - AnimeYt', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_cinecalidad(item):
+    logger.info()
+
+    channel_json = 'cinecalidad.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando CineCalidad[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_cinecalidad(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('cinecalidad')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('CineCalidad')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - CineCalidad', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_cinecalidadla(item):
+    logger.info()
+
+    channel_json = 'cinecalidadla.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando CineCalidadLa[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_cinecalidadla(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('cinecalidadla')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('CineCalidadLa')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - CineCalidadLa', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_cinecalidadlol(item):
+    logger.info()
+
+    channel_json = 'cinecalidadlol.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando CineCalidadLol[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_cinecalidadlol(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('cinecalidadlol')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('CineCalidadLol')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - CineCalidadLol', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_cuevana2(item):
+    logger.info()
+
+    channel_json = 'cuevana2.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando Cuevana2[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_cuevana2(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('cuevana2')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('Cuevana2')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - Cuevana2', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_cuevana3pro(item):
+    logger.info()
+
+    channel_json = 'cuevana3pro.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando Cuevana3Pro[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_cuevana3pro(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('cuevana3pro')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('Cuevana3Pro')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - Cuevana3Pro', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_divxtotal(item):
+    logger.info()
+
+    channel_json = 'divxtotal.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando DivxTotal[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_divxtotal(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('divxtotal')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('DivxTotal')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - DivxTotal', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def oficial_domain_dontorrents(item):
+    logger.info()
+
+    domain = config.get_setting('dominio', 'dontorrents', default='')
+
+    channel_json = 'dontorrents.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando Dominio[/B][/COLOR]' % color_exec)
+
+    # ~ web para comprobar dominio vigente en actions pero pueden requerir proxies
+    # ~ web 0)-'https://privtr.ee/@DonTorrent'
+
+    last_domain = ''
+
+    try:
+       data = httptools.downloadpage('https://privtr.ee/@DonTorrent').data
+
+       dominio = scrapertools.find_single_match(data, '"Dominio Actual".*?"url".*?"(.*?)"')
+
+       if dominio:
+           dominio = dominio.replace('\\/', '/')
+
+           if not dominio.endswith("/"): dominio = dominio + '/'
+
+           last_domain = dominio
+    except:
+       pass
+
+    if not last_domain:
+        platformtools.dialog_notification(config.__addon_name + ' - ' + name, '[B][COLOR %s]No se pudo comprobar[/B][/COLOR]' % color_alert)
+
+        xbmc.sleep(1000)
+        platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]Para saber el Último Dominio Vigente deberá acceder a través de un navegador web a:', '[COLOR cyan][B]privtr.ee/@DonTorrent[/B][/COLOR]')
+        return
+
+    if domain == last_domain:
+        platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]El último dominio vigente es correcto.', '[COLOR cyan][B]' + last_domain + '[/B][/COLOR]')
+        return
+
+    elif item.host_canal == last_domain:
+        platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]El último dominio vigente es correcto.', '[COLOR cyan][B]' + last_domain + '[/B][/COLOR]')
+        return
+
+    nom_dom = domain
+    txt_dom = 'Dominio memorizado incorrecto.'
+    if not domain:
+        nom_dom = 'Sin información'
+        txt_dom = 'Aún No hay ningún Dominio memorizado.'
+
+    if not last_domain:
+        platformtools.dialog_notification(config.__addon_name + ' - ' + name, '[B][COLOR %s]Error Comprobación Dominio[/B][/COLOR]' % color_alert)
+        return
+
+    if platformtools.dialog_yesno(config.__addon_name + ' - ' + name, '¿[COLOR red] ' + txt_dom + ' [/COLOR] Desea cambiarlo ?', 'Memorizado:  [COLOR yellow][B]' + nom_dom + '[/B][/COLOR]', 'Encontrado:     [COLOR cyan][B]' + last_domain + '[/B][/COLOR]'): 
+        config.set_setting('dominio', last_domain, 'Dontorrents')
+
+        if not item.desde_el_canal:
+            if not item.from_action == 'mainlist':
+                platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]Último dominio vigente memorizado, pero aún NO guardado.[/COLOR]', '[COLOR cyan][B]Recuerde, que para que el cambio surta efecto deberá abandonar los Ajustes de Servidores a través de su correspondiente botón --> OK[/B][/COLOR]')
+
+
+def last_domain_dontorrents(item):
+    logger.info()
+
+    domain = config.get_setting('dominio', 'dontorrents', default='')
+
+    channel_json = 'dontorrents.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando Dominio[/B][/COLOR]' % color_exec)
+
+    last_domain = ''
+
+    try:
+       data = httptools.downloadpage('https://privtr.ee/@DonTorrent').data
+
+       dominio = scrapertools.find_single_match(data, '"Dominio Actual".*?"url".*?"(.*?)"')
+
+       if dominio:
+           dominio = dominio.replace('\\/', '/')
+
+           if not dominio.endswith("/"): dominio = dominio + '/'
+
+           last_domain = dominio
+    except:
+       pass
+
+    if not last_domain:
+        platformtools.dialog_notification(config.__addon_name + ' - ' + name, '[B][COLOR %s]No se pudo comprobar[/B][/COLOR]' % color_alert)
+
+        xbmc.sleep(1000)
+        platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]Para saber el Último Dominio Vigente deberá acceder a través de un navegador web a:', '[COLOR cyan][B]privtr.ee/@DonTorrent[/B][/COLOR]')
+        return
+
+    host_channel = ''
+    config.set_setting('user_test_channel', 'host_channel')
+
+    try:
+        localize = tester.test_channel('dontorrents')
+    except:
+        localize = ''
+
+    if config.get_setting('user_test_channel', default=''):
+        host_channel = config.get_setting('user_test_channel', default='')
+        if not host_channel.startswith('https://'): host_channel = ''
+	
+        config.set_setting('user_test_channel', '')
+
+        if host_channel:
+            if not config.get_setting('dominio', 'dontorrents', default=''):
+                if host_channel == item.host_canal:
+                    if item.host_canal == last_domain:
+                        platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR gold][B]El dominio/host del canal es correcto.[/B]', '[COLOR cyan][B]' + last_domain + '[/B][/COLOR]')
+                        return
+
+    if host_channel:
+        if not domain:
+            if last_domain in host_channel:
+                if item.host_canal == last_domain:
+                     platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]El último dominio vigente es correcto.', '[COLOR cyan][B]' + last_domain + '[/B][/COLOR]')
+                     return
+
+    if domain == last_domain:
+        if item.host_canal == last_domain:
+            platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]El último dominio vigente es correcto.', '[COLOR cyan][B]' + last_domain + '[/B][/COLOR]')
+            return
+
+    if localize:
+        if localize == domain:
+            if item.host_canal == last_domain:
+                platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]El dominio vigente es correcto.', '[COLOR cyan][B]' + localize + '[/B][/COLOR]')
+                return
+
+    nom_dom = domain
+    txt_dom = 'Último Dominio memorizado incorrecto.'
+    if not domain:
+        nom_dom = 'Sin información'
+        txt_dom = 'Aún No hay ningún Dominio memorizado.'
+
+    if platformtools.dialog_yesno(config.__addon_name + ' - ' + name, '¿[COLOR red] ' + txt_dom + ' [/COLOR] Desea cambiarlo ?', 'Memorizado:  [COLOR yellow][B]' + nom_dom + '[/B][/COLOR]', 'Vigente:           [COLOR cyan][B]' + last_domain + '[/B][/COLOR]'): 
+        config.set_setting('dominio', last_domain, 'dontorrents')
+
+        if not item.desde_el_canal:
+            if not item.from_action == 'mainlist':
+                platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]Dominio memorizado, pero aún NO guardado.[/COLOR]', '[COLOR cyan][B]Recuerde, que para que el cambio surta efecto deberá abandonar los Ajustes de Servidores a través de su correspondiente botón --> OK[/B][/COLOR]')
+
+
+def manto_domain_dontorrents(item):
+    logger.info()
+
+    channel_json = 'dontorrents.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando DonTorrents[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_dontorrents(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('dontorrents')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('DonTorrents')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - DonTorrents', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_elifilms(item):
+    logger.info()
+
+    channel_json = 'elifilms.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando EliFilms[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_elifilms(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('elifilms')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('EliFilms')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - EliFilms', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_elitetorrent(item):
+    logger.info()
+
+    channel_json = 'elitetorrent.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando EliteTorrent[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_elitetorrent(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('elitetorrent')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('EliteTorrent')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - EliteTorrent', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_elitetorrentnz(item):
+    logger.info()
+
+    channel_json = 'elitetorrentnz.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando EliteTorrentNz[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_elitetorrentnz(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('elitetorrentnz')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('EliteTorrentNz')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - EliteTorrentNz', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_ennovelastv(item):
+    logger.info()
+
+    channel_json = 'ennovelastv.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando EnNovelasTv[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_ennovelastv(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('ennovelastv')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('EnNovelasTv')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - EnNovelasTv', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_entrepeliculasyseries(item):
+    logger.info()
+
+    channel_json = 'entrepeliculasyseries.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando EntrePeliculasySeries[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_entrepeliculasyseries(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('entrepeliculasyseries')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('EntrePeliculasySeries')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - EntrePeliculasySeries', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_grantorrent(item):
+    logger.info()
+
+    channel_json = 'grantorrent.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando GranTorrent[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_grantorrent(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('grantorrent')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('GranTorrent')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - GranTorrent', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def latest_domains_hdfull(item):
+    logger.info()
+
+    domain = config.get_setting('dominio', 'hdfull', default='')
+
+    if not domain:
+        platformtools.dialog_notification(config.__addon_name + '[COLOR yellow][B] HdFull[/B][/COLOR]', '[B][COLOR %s]Falta Configurar el Dominio a usar ...[/COLOR][/B]' % color_alert)
+        return
+
+    channel_json = 'hdfull.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando dominios[/B][/COLOR]' % color_exec)
+
+    # ~ web para saber el ultimo dominio vigente
+    # ~ web 0)-https://dominioshdfull.com/  1)-X https://x.com/hdfulloficial
+
+    last_domain = ''
+    latest_domain = ''
+
+    try:
+       data = httptools.downloadpage('https://dominioshdfull.com/').data
+
+       bloque = scrapertools.find_single_match(data, 'dominios operativos actualizados(.*?)<script>')
+
+       latest_domain = scrapertools.find_single_match(bloque, 'href="(.*?)"')
+
+       if not latest_domain: latest_domain = dominioshdfull[0]
+       else:
+           if not latest_domain.endswith('/'): latest_domain = latest_domain + '/'
+    except:
+       latest_domain = ''
+
+    if latest_domain: last_domain = latest_domain
+
+    if not last_domain:
+        platformtools.dialog_notification(config.__addon_name + ' - ' + name, '[B][COLOR %s]No se pudo comprobar[/B][/COLOR]' % color_alert)
+
+        xbmc.sleep(1000)
+        platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]Para saber el Último Dominio Vigente deberá acceder a través de un navegador web a:', '[COLOR cyan][B]dominioshdfull.com//B][/COLOR]')
+        return
+
+    txt_cfp = ''
+    if last_domain in str(domains_cloudflarehdfull):
+        txt_cfp = '[B][COLOR goldenrod]Posible[/B][/COLOR] [COLOR red][B]CloudFlare[/COLOR][COLOR orangered] Protection[/B][/COLOR]'
+        txt_cfp += ', [B][COLOR darkorange]quizás necesite[/COLOR] [COLOR cyan]una VPN[/B][/COLOR][CR]'
+
+        platformtools.dialog_ok(config.__addon_name + ' - ' + name, txt_cfp + '[COLOR yellow]El último dominio es ', '[COLOR cyan][B]' + last_domain + '[/B][/COLOR]')
+    else:
+        platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]El último dominio es ', '[COLOR cyan][B]' + last_domain + '[/B][/COLOR]')
+
+
+def last_domain_hdfull(item):
+    logger.info()
+
+    channel_json = 'hdfull.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    domain = config.get_setting('dominio', 'hdfull', default='')
+
+    if not domain:
+        platformtools.dialog_notification(config.__addon_name + '[COLOR yellow][B] HdFull[/B][/COLOR]', '[B][COLOR %s]Falta Configurar el Dominio a usar ...[/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name + ' - HdFull', '[B][COLOR %s]Comprobando Dominios[/B][/COLOR]' % color_exec)
+
+    # ~ webs para comprobar dominio vigente en actions pero pueden requerir proxies
+    # ~ webs  0)-https://dominioshdfull.com/  1)-https://new.hdfull.one/  2)-X https://x.com/hdfulloficial
+
+    last_domain = ''
+    latest_domain = ''
+
+    try:
+       data = httptools.downloadpage('https://dominioshdfull.com/').data
+
+       bloque = scrapertools.find_single_match(data, 'dominios operativos actualizados(.*?)<script>')
+
+       latest_domain = scrapertools.find_single_match(bloque, 'href="(.*?)"')
+
+       if not latest_domain: latest_domain = dominioshdfull[0]
+       else:
+           if not latest_domain.endswith('/'): latest_domain = latest_domain + '/'
+    except:
+       latest_domain = ''
+
+    if latest_domain:
+        if latest_domain == domain: last_domain = latest_domain
+
+    if not last_domain:
+        try:
+           data = httptools.downloadpage('https://dominioshdfull.com/').data
+
+           bloque = scrapertools.find_single_match(data, 'dominios operativos actualizados(.*?)<script>')
+
+           last_domain = scrapertools.find_single_match(bloque, 'href="(.*?)"')
+
+           if not last_domain: last_domain = dominioshdfull[0]
+
+           if last_domain:
+               if not last_domain.endswith('/'): last_domain = last_domain + '/'
+        except:
+           last_domain = ''
+
+    if not last_domain:
+        if not domain in str(dominioshdfull):
+            platformtools.dialog_notification(config.__addon_name + ' - ' + name, '[B][COLOR %s]No se pudo comprobar[/B][/COLOR]' % color_alert)
+
+            xbmc.sleep(1000)
+            platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]Para saber el Último Dominio Vigente deberá acceder a través de un navegador web a:', '[COLOR cyan][B]dominioshdfull.com[/B][/COLOR]')
+            return
+
+
+    host_channel = ''
+    config.set_setting('user_test_channel', 'host_channel')
+
+    try:
+        localize = tester.test_channel('hdfull')
+    except:
+        localize = ''
+
+    if config.get_setting('user_test_channel', default=''):
+        host_channel = config.get_setting('user_test_channel', default='')
+        if not host_channel.startswith('https://'): host_channel = ''
+	
+        config.set_setting('user_test_channel', '')
+
+        if host_channel:
+            if host_channel == item.host_canal:
+                if item.host_canal == last_domain:
+                    platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR gold][B]El dominio/host del canal es correcto.[/B]', '[COLOR cyan][B]' + last_domain + '[/B][/COLOR]')
+                    return
+
+    if host_channel:
+        if not domain:
+            if last_domain in host_channel:
+                 platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]El último dominio vigente es correcto.', '[COLOR cyan][B]' + last_domain + '[/B][/COLOR]')
+                 return
+
+    if domain == last_domain:
+        platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]El último dominio vigente es correcto.', '[COLOR cyan][B]' + last_domain + '[/B][/COLOR]')
+        return
+
+    if localize:
+        if last_domain:
+            if last_domain == domain:
+                platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]El dominio vigente es correcto.', '[COLOR cyan][B]' + last_domain + '[/B][/COLOR]')
+                return
+
+        elif localize == domain:
+            platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]El dominio vigente es correcto.', '[COLOR cyan][B]' + localize + '[/B][/COLOR]')
+            return
+    else:
+        if last_domain == domain:
+            platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]El dominio vigente es correcto.', '[COLOR cyan][B]' + last_domain + '[/B][/COLOR]')
+            return
+
+    nom_dom = domain
+    txt_dom = 'Último Dominio memorizado incorrecto.'
+
+    txt_cfp = ''
+    if last_domain in str(domains_cloudflarehdfull):
+        txt_cfp = '[B][COLOR goldenrod]Posible[/B][/COLOR] [COLOR red][B]CloudFlare[/COLOR][COLOR orangered] Protection[/B][/COLOR]'
+        txt_cfp += ', [B][COLOR darkorange]quizás necesite[/COLOR] [COLOR cyan]una VPN[/B][/COLOR][CR]'
+
+    if not domain:
+        nom_dom = 'Sin información'
+        txt_dom = 'Aún No hay ningún Dominio memorizado.'
+
+    if not last_domain: last_domain = dominioshdfull[0]
+
+    if platformtools.dialog_yesno(config.__addon_name + ' - ' + name, txt_cfp + '¿[COLOR red] ' + txt_dom + ' [/COLOR] Desea cambiarlo ?', 'Memorizado:  [COLOR yellow][B]' + nom_dom + '[/B][/COLOR]', 'Vigente:           [COLOR cyan][B]' + last_domain + '[/B][/COLOR]'): 
+        config.set_setting('dominio', last_domain, 'hdfull')
+
+        if not item.desde_el_canal:
+            if not item.from_action == 'mainlist':
+                platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]Último dominio vigente memorizado, pero aún NO guardado.[/COLOR]', '[COLOR cyan][B]Recuerde, que para que el cambio surta efecto deberá abandonar los Ajustes de Servidores a través de su correspondiente botón --> OK[/B][/COLOR]')
+
+
+def operative_domains_hdfull(item):
+    logger.info()
+
+    domains = []
+
+    domain = config.get_setting('dominio', 'hdfull', default='')
+
+    channel_json = 'hdfull.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando Dominios[/B][/COLOR]' % color_exec)
+
+    # ~ web para comprobar todos los dominios operativos
+    # ~ web  0)-https://dominioshdfull.com/  1)-X https://x.com/hdfulloficial
+
+    last_domain = ''
+
+    try:
+       data = httptools.downloadpage('https://dominioshdfull.com/').data
+
+       bloque = scrapertools.find_single_match(data, 'dominios operativos actualizados(.*?)<script>')
+
+       operative_domains = scrapertools.find_multiple_matches(bloque, 'href="(.*?)"')
+
+       if not operative_domains: operative_domains = dominioshdfull
+
+    except:
+       platformtools.dialog_notification(config.__addon_name + ' - ' + name, '[B][COLOR %s]Error Acceso Dominios Operativos[/B][/COLOR]' % color_alert)
+       return
+
+    i = -1
+    preselect = 0
+
+    for operative in operative_domains:
+        i += 1
+
+        if not operative.endswith('/'): operative = operative + '/'
+
+        if operative == domain: preselect = i
+
+        domains.append(operative)
+
+    if not domains:
+        platformtools.dialog_notification(config.__addon_name + ' - ' + name, '[B][COLOR %s]Sin Dominios Operativos[/B][/COLOR]' % color_alert)
+        return
+
+    sel_domain = ''
+
+    ret = platformtools.dialog_select('HdFull - Dominios Operativos', domains, preselect = preselect)
+
+    if ret == -1: return False
+
+    if domains[ret] in str(ant_hosts_hdfull):
+        platformtools.dialog_ok(config.__addon_name + ' HdFull - Dominios Operativos', '[COLOR red][B]Dominio Obsoleto.[/B][/COLOR]', '[COLOR cyan][B]' + domains[ret] + ' [/B][/COLOR]')
+        return False
+
+    elif domains[ret] in str(domains_cloudflarehdfull):
+        if not platformtools.dialog_yesno(config.__addon_name + ' HdFull - Dominios Operativos', '[COLOR yellow][B]Este Dominio, [COLOR plum](si no hay resultados)[/COLOR][COLOR yellow], probablemente Necesitará[/COLOR] [COLOR red] Configurar Proxies [/B][/COLOR]', '[COLOR cyan][B]' + domains[ret] + ' [/B][/COLOR]', '[COLOR yellowgreen][B]¿ Confirma el Dominio seleccionado ?[/B][/COLOR]'):
+            return False
+
+    sel_domain = domains[ret]
+
+    nom_dom = domain
+    txt_dom = 'Dominio memorizado incorrecto.'
+    if not domain:
+        nom_dom = 'Sin información'
+        txt_dom = 'Aún No hay ningún Dominio memorizado.'
+
+    if not sel_domain:
+        platformtools.dialog_notification(config.__addon_name + ' - ' + name, '[B][COLOR %s]Error Comprobación Dominio[/B][/COLOR]' % color_alert)
+        return
+
+    if domain == sel_domain:
+        platformtools.dialog_notification(config.__addon_name + ' - ' + name, '[B][COLOR %s]Dominio correcto[/B][/COLOR]' % color_infor)
+        return
+
+    if not last_domain: last_domain = dominioshdfull[0]
+
+    if platformtools.dialog_yesno(config.__addon_name + ' - ' + name, '¿[COLOR red] ' + txt_dom + ' [/COLOR] Desea cambiarlo ?', 'Memorizado:  [COLOR yellow][B]  ' + nom_dom + '[/B][/COLOR]', 'Seleccionado:   [COLOR cyan][B]' + sel_domain + '[/B][/COLOR]'): 
+        config.set_setting('dominio', sel_domain, 'hdfull')
+
+        if not item.desde_el_canal:
+            if not item.from_action == 'mainlist':
+                platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]Último dominio vigente memorizado, pero aún NO guardado.[/COLOR]', '[COLOR cyan][B]Recuerde, que para que el cambio surta efecto deberá abandonar los Ajustes de Servidores a través de su correspondiente botón --> OK[/B][/COLOR]')
+
+
+def del_datos_hdfull(item):
+    logger.info()
+
+    channel_json = 'hdfull.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    username = config.get_setting('hdfull_username', 'hdfull', default='')
+    password = config.get_setting('hdfull_password', 'hdfull', default='')
+
+    if not username:
+        if not password:
+            platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]HdFull Sin credenciales[/B][/COLOR]' % color_exec)
+            return
+
+    if platformtools.dialog_yesno(config.__addon_name, '[COLOR red][B]¿ Confirma eliminar sus credenciales de HdFull ?[/B][/COLOR]'):
+        config.set_setting('channel_hdfull_hdfull_login', False)
+        config.set_setting('channel_hdfull_hdfull_password', '')
+        config.set_setting('channel_hdfull_hdfull_username', '')
+
+
+def manto_domain_hdfull(item):
+    logger.info()
+
+    channel_json = 'hdfull.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando HdFull[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_hdfull(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('hdfull')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    domain = config.get_setting('dominio', 'hdfull', default='')
+
+    if not domain:
+        platformtools.dialog_notification(config.__addon_name + '[COLOR yellow][B] HdFull[/B][/COLOR]', '[B][COLOR %s]Falta Configurar el Dominio a usar ...[/COLOR][/B]' % color_alert)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('HdFull')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - HdFull', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_homecine(item):
+    logger.info()
+
+    channel_json = 'homecine.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando HomeCine[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_homecine(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('homecine')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('HomeCine')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - HomeCine', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_mejortorrentapp(item):
+    logger.info()
+
+    channel_json = 'mejortorrentapp.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando MejorTorrentApp[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_mejortorrentapp(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('mejortorrentapp')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('MejorTorrentApp')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - MejorTorrentApp', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_mitorrent(item):
+    logger.info()
+
+    channel_json = 'mitorrent.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando MiTorrent[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_mitorrent(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('mitorrent')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('MiTorrent')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - MiTorrent', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_peliculaspro(item):
+    logger.info()
+
+    channel_json = 'peliculaspro.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando PeliculasPro[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_peliculaspro(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('peliculaspro')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('PeliculasPro')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - PeliculasPro', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_pelisforte(item):
+    logger.info()
+
+    channel_json = 'pelisforte.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando PelisForte[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_pelisforte(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('pelisforte')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('PelisForte')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - PelisForte', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_pelismart(item):
+    logger.info()
+
+    channel_json = 'pelismart.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando PelisMart[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_pelismart(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('pelismart')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('PelisMart')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - PelisMart', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_pelispanda(item):
+    logger.info()
+
+    channel_json = 'pelispanda.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando PelisPanda[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_pelispanda(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('pelispanda')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('PelisPanda')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - PelisPanda', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+def manto_domain_pelisplushdlat(item):
+    logger.info()
+
+    channel_json = 'pelisplushdlat.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando PelisPlusHdLat[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_pelisplushdlat(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('pelisplushdlat')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('PelisPlusHdLat')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - PelisPlusHdLat', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_pelisplushdnz(item):
+    logger.info()
+
+    channel_json = 'pelisplushdnz.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando PelisPlusHdNz[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_pelisplushdnz(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('pelisplushdnz')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('PelisPlusHdNz')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - PelisPlusHdNz', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_poseidonhd2(item):
+    logger.info()
+
+    channel_json = 'poseidonhd2.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando PoseidonHd2[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_poseidonhd2(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('poseidonhd2')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('PoseidonHd2')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - PoseidonHd2', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_repelishd(item):
+    logger.info()
+
+    channel_json = 'repelishd.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando RePelisHd[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_repelishd(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('repelishd')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('RePelisHd')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - RePelisHd', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_serieskao(item):
+    logger.info()
+
+    channel_json = 'serieskao.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando SeriesKao[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_serieskao(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('serieskao')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('SeriesKao')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - SeriesKao', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_seriespapayato(item):
+    logger.info()
+
+    channel_json = 'seriespapayato.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando SeriesPapayaTo[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_seriespapayato(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('seriespapayato')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('SeriesPapayaTo')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - SeriesPapayaTo', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_srnovelas(item):
+    logger.info()
+
+    channel_json = 'srnovelas.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando SrNovelas[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_srnovelas(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('srnovelas')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('srnovelas')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - SrNovelas', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_subtorrents(item):
+    logger.info()
+
+    channel_json = 'subtorrents.json'
+    filename_json = os.path.join(config.get_runtime_path(), 'channels', channel_json)
+
+    data = filetools.read(filename_json)
+    params = jsontools.load(data)
+
+    try:
+       data = filetools.read(filename_json)
+       params = jsontools.load(data)
+    except:
+       el_canal = ('Falta [B][COLOR %s]' + channel_json) % color_alert
+       platformtools.dialog_notification(config.__addon_name, el_canal + '[/COLOR][/B]')
+       return
+
+    id = params['id']
+    name = params['name']
+
+    if params['active'] == False:
+        el_canal = ('[B][COLOR %s] ' + name) % color_avis
+        platformtools.dialog_notification(config.__addon_name, el_canal + '[COLOR %s] inactivo [/COLOR][/B]' % color_alert)
+        return
+
+    platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Comprobando SubTorrents[/B][/COLOR]' % color_exec)
+
+    manto_domain_common(item, id, name)
+
+
+def test_domain_subtorrents(item):
+    logger.info()
+
+    datos = channeltools.get_channel_parameters('subtorrents')
+    if not datos['active']:
+        platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]El canal está Inactivo[/B][/COLOR]' % color_avis)
+        return
+
+    config.set_setting('developer_test_channels', '')
+
+    try:
+        tester.test_channel('SubTorrents')
+    except:
+        platformtools.dialog_notification(config.__addon_name + ' - SubTorrents', '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+
+
+def manto_domain_common(item, id, name):
+    logger.info()
+
+    config.set_setting('user_test_channel', '')
+
+    domain = config.get_setting('dominio', id, default='')
+
+    falso = True
+
+    for channel_current in channels_currents:
+        if not id == channel_current: continue
+
+        falso = False
+        break
+
+    if falso:
+        platformtools.dialog_notification(config.__addon_name + '[B][COLOR yellow] ' + name + '[/COLOR][/B]', '[B][COLOR %s]Comprobación NO permitida[/B][/COLOR]' % color_alert)
+        return
+    else:
+       if platformtools.dialog_yesno(config.__addon_name + ' [COLOR yellow][B]' + name + '[/B][/COLOR]', '[COLOR yellowgreen][B]¿ Desea Localizar el Nuevo Dominio Permanente del Canal ?[/B][/COLOR]'):
+           if id == 'dontorrents':
+               last_domain_dontorrents(item)
+               return
+
+           elif id == 'hdfull':
+               last_domain_hdfull(item)
+               return
+
+           config.set_setting('user_test_channel', 'localize')
+
+           try:
+               localize = tester.test_channel(id)
+           except:
+               platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Error comprobación, Reintentelo de Nuevo[/B][/COLOR]' % color_alert)
+               return
+
+           if config.get_setting('user_test_channel', default=''):
+               if config.get_setting('user_test_channel') == 'localized': config.set_setting('user_test_channel', 'localize')
+
+               if config.get_setting('user_test_channel') == 'localize':
+                   config.set_setting('user_test_channel', '')
+
+                   platformtools.dialog_notification(config.__addon_name + ' [COLOR yellow][B]' + name + '[/B][/COLOR]', '[B][COLOR %s]El Dominio Actual está Vigente[/B][/COLOR]' % color_infor)
+                   return
+
+               else:
+                   platformtools.dialog_notification(config.__addon_name + ' [COLOR yellow][B]' + name + '[/B][/COLOR]', '[B][COLOR %s]Localizado Nuevo Dominio[/B][/COLOR]' % color_avis)
+
+                   domain = config.get_setting('user_test_channel')
+                   if domain.startswith('http:'): domain = domain.replace('http:', 'https:')
+
+           else:
+               platformtools.dialog_notification(config.__addon_name + ' [COLOR yellow][B]' + name + '[/B][/COLOR]', '[B][COLOR %s]Nuevo Dominio No localizado[/B][/COLOR]' % color_alert)
+
+    if id == 'animeonline':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio AnimeOnline  -->  [COLOR %s]https://???.animeonline.?????/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://': return
+
+    elif id == 'animeyt':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio AnimeYt  -->  [COLOR %s]https://animeyt?.???/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://': return
+
+    elif id == 'cinecalidad':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://cinecalidad.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio CineCalidad  -->  [COLOR %s]https://cinecalidad.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://cinecalidad.': return
+
+    elif id == 'cinecalidadla':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://cine-calidad.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio CineCalidadLa  -->  [COLOR %s]https://cine-calidad.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://cine-calidad.': return
+
+    elif id == 'cinecalidadlol':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio CineCalidadLol  -->  [COLOR %s]https://???.cinecalidad.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://': return
+
+    elif id == 'cuevana2':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio Cuevana2  -->  [COLOR %s]https://???.cuevana2.???/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://': return
+
+    elif id == 'cuevana3pro':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio Cuevana3Pro  -->  [COLOR %s]https://??.cuevana3.vip[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://': return
+
+    elif id == 'divxtotal':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://divxtotal.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio DivxTotal  -->  [COLOR %s]https://divxtotal.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://divxtotal.': return
+
+    elif id == 'dontorrents':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://dontorrent.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio DonTorrents  -->  [COLOR %s]https://dontorrent.????/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://dontorrent.': return
+
+    elif id == 'elifilms':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://allcalidad.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio EliFilms  -->  [COLOR %s]https://allcalidad.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://allcalidad.': return
+
+    elif id == 'elitetorrent':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://www.elitetorrent.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio EliteTorrent  -->  [COLOR %s]https://www.elitetorrent.???/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://www.elitetorrent.': return
+
+    elif id == 'elitetorrentnz':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://www.elitetorrent.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio EliteTorrentNz  -->  [COLOR %s]https://www.elitetorrent.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://www.elitetorrent.': return
+
+    elif id == 'ennovelastv':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio EnNovelasTv  -->  [COLOR %s]https://?.ennovelas-tv.com/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://': return
+
+    elif id == 'entrepeliculasyseries':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://entrepeliculasyseries.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio EntrePeliculasySeries  -->  [COLOR %s]https://entrepeliculasyseries.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://entrepeliculasyseries.': return
+
+    elif id == 'grantorrent':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://grantorrent.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio GranTorrent  -->  [COLOR %s]https://grantorrent.???/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://grantorrent.': return
+
+    elif id == 'hdfull':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://hdfull'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio HdFull  -->  [COLOR %s]https://hdfull???.???/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://hdfull': return
+
+    elif id == 'homecine':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://homecine.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio HomeCine  -->  [COLOR %s]https://homecine.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://homecine.': return
+
+    elif id == 'mejortorrentapp':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio MejorTorrentApp  -->  [COLOR %s]https://?????.mejortorrent.??[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://': return
+
+    elif id == 'mitorrent':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://mitorrent.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio MiTorrent  -->  [COLOR %s]https://mitorrent.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://mitorrent.': return
+
+    elif id == 'peliculaspro':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://peliculaspro.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio PeliculasPro  -->  [COLOR %s]https://peliculaspro.???/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://peliculaspro.': return
+
+    elif id == 'pelisforte':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio PelisForte  -->  [COLOR %s]https://????.pelisforte.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://': return
+
+    elif id == 'pelismart':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://smartpelis.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio PelisMart  -->  [COLOR %s]https://smatpelis.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://smartpelis.': return
+
+    elif id == 'pelispanda':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://pelispanda.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio PelisPanda  -->  [COLOR %s]https://pelispanda.???/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://pelispanda.': return
+
+    elif id == 'pelisplushdlat':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio PelisPlusHdLat  -->  [COLOR %s]https://?????.pelisplushd.to/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://': return
+
+    elif id == 'pelisplushdnz':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://pelisplushd.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio PelisPlusHdNz  -->  [COLOR %s]https://pelisplushd.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://pelisplushd.': return
+
+    elif id == 'poseidonhd2':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio PoseidonHd2  -->  [COLOR %s]https://???.poseidonhd2.??/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://': return
+
+    elif id == 'repelishd':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://repelishd.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio RePelisHd  -->  [COLOR %s]https://repelishd.???/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://repelishd.': return
+
+    elif id == 'serieskao':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://serieskao.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio SeriesKao  -->  [COLOR %s]https://serieskao.???/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://serieskao.': return
+
+    elif id == 'seriespapayato':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio SeriesPapayaTo  -->  [COLOR %s]https://????.papayaseries.???/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://': return
+
+    elif id == 'srnovelas':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://srnovelas.'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio SrNovelas  -->  [COLOR %s]https://srnovelas.???/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://srnovelas.': return
+
+    elif id == 'subtorrents':
+        config.set_setting('user_test_channel', '')
+
+        if not domain: domain = 'https://'
+
+        new_domain = platformtools.dialog_input(default=domain, heading='Indicar dominio SubTorrents  -->  [COLOR %s]https://????.subtorrents.???/[/COLOR]' % color_avis)
+
+        if new_domain is None: return
+        elif new_domain == 'https://': return
+
+    else:
+        return
+
+    config.set_setting('user_test_channel', '')
+
+    if not new_domain:
+        if domain:
+            if platformtools.dialog_yesno(config.__addon_name + ' - ' + name, '¿ [COLOR red][B] Confirma eliminar el Dominio Memorizado ?[/B][/COLOR]', '[COLOR cyan][B] ' + domain + ' [/B][/COLOR]'): 
+                config.set_setting('dominio', new_domain, id)
+
+                if item.desde_el_canal:
+                    platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]Dominio eliminado, pero aún NO guardado.[/COLOR]', '[COLOR cyan][B]Recuerde, que para que el cambio surta efecto deberá abandonar el Canal e Ingresar de nuevo en él.[/B][/COLOR]')
+                else:
+                    if not item.from_action == 'mainlist':
+                        platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]Dominio memorizado, pero aún NO guardado.[/COLOR]', '[COLOR cyan][B]Recuerde, que para que el cambio surta efecto deberá abandonar los Ajustes de Servidores a través de su correspondiente botón --> OK[/B][/COLOR]')
+        return
+
+    if new_domain:
+        new_domain = new_domain.lower()
+
+        mistake = False
+
+        if ':' not in new_domain: mistake = True
+        elif '//' not in new_domain: mistake = True
+        elif '.' not in new_domain: mistake = True
+
+        if mistake:
+            platformtools.dialog_notification(config.__addon_name, '[B][COLOR %s]Dominio incorrecto[/B][/COLOR]' % color_adver)
+            return
+
+        if new_domain.startswith('http:'): new_domain = new_domain.replace('http:', 'https:')
+        elif new_domain.startswith('//'): new_domain = 'https:' + new_domain
+
+        if not new_domain.startswith('https://'): new_domain = 'https://' + new_domain
+
+        if not new_domain.endswith('/'):
+            if id == 'cuevana3pro': pass
+            elif id == 'mejortorrentapp': pass
+            else: new_domain = new_domain + '/'
+        else:
+            avisar = False
+            if id == 'cuevana3pro': avisar = True
+            elif id == 'mejortorrentapp': avisar = True
+
+            if avisar:
+                platformtools.dialog_notification(config.__addon_name + ' - ' + id.capitalize(), '[B][COLOR %s]Dominio sin / al final[/B][/COLOR]' % color_adver)
+                return
+
+        if platformtools.dialog_yesno(config.__addon_name + ' - ' + name, '¿ [COLOR yellow][B] Confirma el Dominio informado ?[/B][/COLOR]', '[COLOR cyan][B] ' + new_domain + ' [/B][/COLOR]'): 
+            config.set_setting('dominio', new_domain, id)
+
+            if item.desde_el_canal:
+                platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]Dominio memorizado, pero aún NO guardado.[/COLOR]', '[COLOR cyan][B]Recuerde, que para que el cambio surta efecto deberá abandonar el Canal e Ingresar de nuevo en él.[/B][/COLOR]')
+            else:
+                if not item.from_action == 'mainlist':
+                    platformtools.dialog_ok(config.__addon_name + ' - ' + name, '[COLOR yellow]Dominio memorizado, pero aún NO guardado.[/COLOR]', '[COLOR cyan][B]Recuerde, que para que el cambio surta efecto deberá abandonar los Ajustes de Servidores a través de su correspondiente botón --> OK[/B][/COLOR]')
+
+    return
+

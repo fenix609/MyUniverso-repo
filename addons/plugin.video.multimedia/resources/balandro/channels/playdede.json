@@ -1,0 +1,17 @@
+{
+  "id": "playdede",
+  "name": "PlayDede",
+  "thumbnail": "playdede.jpg",
+
+  "active": false,
+
+  "searchable": true,
+  "search_types": ["all", "movie", "tvshow"],
+
+  "categories": ["movie", "tvshow"],
+  "language": ["cast", "lat", "vose", "vo"],
+
+  "clusters": ["register", "news", "rankings", "languages", "qualityes", "countries", "years", "lists", "lasts", "producers", "kids", "docs", "vos", "anime"],
+
+  "notes": "Web CERRADA. Películas por géneros. Series por Géneros."
+}

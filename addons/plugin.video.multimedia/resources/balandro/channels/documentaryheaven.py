@@ -1,0 +1,148 @@
+# -*- coding: utf-8 -*-
+
+import re
+
+from platformcode import config, logger, platformtools
+from core.item import Item
+from core import httptools, scrapertools, servertools, tmdb
+
+
+host = 'https://documentaryheaven.com/'
+
+
+def mainlist(item):
+    logger.info()
+    itemlist = []
+
+    # ~ reCaptcha
+    # ~ itemlist.append(item.clone( title = 'Buscar documental ...', action = 'search', search_type = 'documentary', text_color='cyan' ))
+
+    itemlist.append(item.clone( title = 'Catálogo', action = 'list_all', url = host + 'all'))
+
+    itemlist.append(item.clone( title = 'Por categoría', action = 'categorias' ))
+
+    return itemlist
+
+
+def categorias(item):
+    logger.info()
+    itemlist = []
+
+    data = httptools.downloadpage(host).data
+
+    bloque = scrapertools.find_single_match(data, '>Categories<(.*?)</aside>')
+
+    matches = scrapertools.find_multiple_matches(bloque, 'href=(.*?) title=.*?">(.*?)</a>')
+
+    for url, title in matches:
+        url = url.strip()
+
+        url = host[:-1] + url
+
+        itemlist.append(item.clone( action = 'list_all', title = title, url = url, text_color='cyan' ))
+
+    return itemlist
+
+
+def list_all(item):
+    logger.info()
+    itemlist = []
+
+    data = httptools.downloadpage(item.url).data
+    data = re.sub(r'\n|\r|\t|\s{2}|&nbsp;', '', data)
+
+    matches = scrapertools.find_multiple_matches(data, '<article(.*?)</article>')
+
+    for match in matches:
+        url = scrapertools.find_single_match(match, 'href="(.*?)"')
+
+        if not url: url = scrapertools.find_single_match(match, 'href=(.*?)title=').strip()
+
+        title = scrapertools.find_single_match(match, 'title="(.*?)"')
+
+        if not url or not title: continue
+
+        url = url.strip()
+
+        thumb = scrapertools.find_single_match(match, 'src="(.*?)"').strip()
+
+        thumb = host[:-1] + thumb
+
+        plot = scrapertools.find_single_match(match, '<p>(.*?)</p>')
+
+        title = title.replace('&#8217;', "'").replace('&#039;s', "'s")
+
+        itemlist.append(item.clone( action = 'findvideos', url = url, title = title, thumbnail = thumb, plot = plot,
+                                    contentType='movie', infoLabels={"year": '-', "plot": plot}, contentTitle=title, contentExtra='documentary' ))
+
+    tmdb.set_infoLabels(itemlist)
+
+    if itemlist:
+        next_page = scrapertools.find_single_match(data, '<li class="active">.*?</a>.*?href="(.*?)"')
+
+        if not next_page: next_page = scrapertools.find_single_match(data, 'class=next-btn>.*?href=(.*?)>NEXT PAGE')
+
+        next_page = next_page.strip()
+
+        if next_page:
+            if '/page/' in next_page:
+                itemlist.append(item.clone( title='Siguientes ...', action='list_all', url = next_page, text_color='coral' ))
+
+    return itemlist
+
+
+def findvideos(item):
+    logger.info()
+    itemlist = []
+
+    data = httptools.downloadpage(item.url).data
+
+    i = 0
+
+    url = scrapertools.find_single_match(data, 'itemprop="embedUrl" content="(.*?)"')
+
+    if '/?listType=' in url: url = ''
+
+    if url:
+        i += 1
+
+        servidor = servertools.get_server_from_url(url)
+
+        if servidor != 'directo':
+            itemlist.append(Item( channel = item.channel, action = 'play', title = '', url = url, server = servidor, language = 'Vo' ))
+
+    if not itemlist:
+        if 'plays on Youtube' in data:
+            bloque = scrapertools.find_single_match(data, 'plays on Youtube(.*?)</div>')
+
+            matches = scrapertools.find_multiple_matches(bloque, '<a href="(.*?)"')
+
+            for match in matches:
+                i += 1
+
+                url = match
+
+                servidor = servertools.get_server_from_url(url)
+
+                if servidor != 'directo':
+                    itemlist.append(Item( channel = item.channel, action = 'play', title = '', url = url, server = servidor, language = 'Vo' ))
+
+                
+    if not itemlist:
+        if not i == 0:
+            platformtools.dialog_notification(config.__addon_name, '[COLOR tan][B]Sin enlaces Soportados[/B][/COLOR]')
+            return
+
+    return itemlist
+
+
+def search(item, texto):
+    logger.info()
+    try:
+        item.url = host + 'find/?q=' + texto.replace(" ", "+")
+        return list_all(item)
+    except:
+        import sys
+        for line in sys.exc_info():
+            logger.error("%s" % line)
+        return []

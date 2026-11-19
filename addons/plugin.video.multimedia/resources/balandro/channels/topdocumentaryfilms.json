@@ -1,0 +1,17 @@
+{
+  "id": "topdocumentaryfilms",
+  "name": "TopDocumentaryFilms",
+  "thumbnail": "topdocumentaryfilms.jpg",
+
+  "active": true,
+
+  "searchable": true,
+  "search_types": ["documentary"],
+
+  "categories": ["documentary"],
+  "language": ["vo"],
+
+  "clusters": ["onlyone", "categories"],
+
+  "notes": "Documentales en versión original."
+}
