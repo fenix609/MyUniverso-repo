@@ -6,14 +6,7 @@
     },
     {
       "name": "Películas y Series",
-      "items": [
-        {
-          "title": "Big Buck Bunny (MP4)",
-          "type": "video",
-          "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-          "plot": "Vídeo de prueba."
-        }
-      ]
+      "items": []
     },
     {
       "name": "Entretenimiento",

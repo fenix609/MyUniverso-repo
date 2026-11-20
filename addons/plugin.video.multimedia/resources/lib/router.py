@@ -6,13 +6,19 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 
-from . import balandro_bridge, catalog, hosters, media, menu, player, probe, utils
+from . import balandro_bridge, catalog, cloudfolders, hosters, media, menu, player, probe, utils
 
 HANDLE = -1
 BASE = ""
 
 
+SLIDE = False     # True mientras Kodi recorre la carpeta para una presentación: solo fotos y carpetas
+COLLECT = None    # lista de pistas mientras se prepara "Reproducir toda la carpeta"
+
+
 def url_for(**kwargs):
+    if SLIDE and "slide" not in kwargs:
+        kwargs["slide"] = "1"
     return "{}?{}".format(BASE, urlencode(kwargs))
 
 
@@ -23,6 +29,8 @@ def _art(item, entry):
 
 
 def add_folder(label, url, entry=None):
+    if COLLECT is not None:
+        return
     entry = entry or {}
     item = xbmcgui.ListItem(label=label)
     _art(item, entry)
@@ -32,9 +40,169 @@ def add_folder(label, url, entry=None):
     xbmcplugin.addDirectoryItem(HANDLE, url, item, True)
 
 
+_IMAGE_TYPES = ("image", "photo", "foto", "imagen")
+_AUDIO_TYPES = ("audio", "music", "musica", "música")
+_MIME = {".png": "image/png", ".gif": "image/gif", ".webp": "image/webp", ".bmp": "image/bmp",
+         ".tif": "image/tiff", ".tiff": "image/tiff", ".heic": "image/heic", ".avif": "image/avif"}
+
+
+def _in_cloud(entry):
+    url = (entry.get("url") or "").strip()
+    return bool(media.drive_id(entry) or (entry.get("mega") or "").strip() or media.host_name(url) in ("Mega", "Google Drive"))
+
+
+def _is_cloud_photo(entry):
+    """Foto (type="image"/"foto") alojada en Google Drive o Mega."""
+    return (entry.get("type") or "").lower() in _IMAGE_TYPES and _in_cloud(entry)
+
+
+def _is_cloud_audio(entry):
+    """Canción (type="audio"/"musica") alojada en Google Drive o Mega."""
+    return (entry.get("type") or "").lower() in _AUDIO_TYPES and _in_cloud(entry)
+
+
+def _is_photo_entry(entry):
+    return _is_cloud_photo(entry) or media.item_kind(entry)[0] == "image"
+
+
+def _is_audio_entry(entry):
+    return (entry.get("type") or "").lower() in _AUDIO_TYPES or media.item_kind(entry)[0] == "audio"
+
+
+def _photo_url(entry):
+    """Dirección que Kodi puede abrir (proxy local de Drive/Mega). Lanza ResolveError si no se puede."""
+    fid = media.drive_id(entry)
+    if fid:
+        proxy = utils.drive_proxy_base()
+        return "{}/drive/{}".format(proxy, fid) if proxy else media.drive_url(fid, utils.get_setting("drive_api_key"))
+    link = (entry.get("mega") or "").strip() or (entry.get("url") or "").strip()
+    return hosters._mega(link)
+
+
+def _add_photo(entry):
+    title = entry.get("title") or entry.get("name") or "Sin título"
+    item = xbmcgui.ListItem(label=title)
+    _art(item, entry)
+    try:
+        url = _photo_url(entry)
+    except hosters.ResolveError as exc:
+        utils.log("Foto '{}': {}".format(title, exc), error=True)
+        xbmcplugin.addDirectoryItem(HANDLE, url_for(action="photo_error", msg=str(exc)), item, False)
+        return
+    item.setInfo("pictures", {"title": title})
+    ext = media._ext(entry.get("name") or entry.get("title") or "")
+    item.setMimeType(_MIME.get(ext, "image/jpeg"))  # el proxy no indica el tipo: se lo decimos a Kodi
+    item.setContentLookup(False)
+    if not entry.get("thumb"):
+        item.setArt({"thumb": url, "icon": url})
+    xbmcplugin.addDirectoryItem(HANDLE, url, item, False)
+
+
+def _add_cloud_audio(entry):
+    title = entry.get("title") or entry.get("name") or "Sin título"
+    item = xbmcgui.ListItem(label=title)
+    _art(item, entry)
+    item.setInfo("music", {"title": title, "artist": entry.get("artist", ""), "album": entry.get("album", "")})
+    try:
+        url = _photo_url(entry)
+    except hosters.ResolveError as exc:
+        utils.log("Canción '{}': {}".format(title, exc), error=True)
+        xbmcplugin.addDirectoryItem(HANDLE, url_for(action="photo_error", msg=str(exc)), item, False)
+        return
+    item.setProperty("IsPlayable", "true")
+    xbmcplugin.addDirectoryItem(HANDLE, url_for(action="play", url=url, title=title, kind="audio"), item, False)
+
+
+def _collect(entry):
+    """Modo 'Reproducir toda la carpeta': guarda (título, dirección) de cada canción."""
+    if not _is_audio_entry(entry):
+        return
+    title = entry.get("title") or entry.get("name") or "Sin título"
+    try:
+        url = _photo_url(entry) if _in_cloud(entry) else entry.get("url", "")
+    except hosters.ResolveError as exc:
+        utils.log("Canción '{}': {}".format(title, exc), error=True)
+        return
+    if url:
+        COLLECT.append((title, url))
+
+
+def photo_error(msg=""):
+    utils.notify((msg or "No se puede abrir el archivo")[:120], error=True)
+    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+
+
+def _add_controls(entries, target):
+    """Opciones de arriba de una carpeta: presentación automática (fotos) y reproducir todo (música)."""
+    if SLIDE or COLLECT is not None:
+        return
+    if any(_is_photo_entry(e) for e in entries):
+        for label, extra in (("[B]▶ Presentación automática[/B]", {"mode": "ordered"}),
+                             ("[B]▶ Presentación aleatoria (con subcarpetas)[/B]", {"mode": "random"})):
+            item = xbmcgui.ListItem(label=label)
+            item.setInfo("pictures", {"title": label})
+            xbmcplugin.addDirectoryItem(HANDLE, url_for(action="slideshow", target=target, **extra), item, False)
+    if any(_is_audio_entry(e) for e in entries):
+        for label, extra in (("[B]▶ Reproducir toda la carpeta[/B]", {}),
+                             ("[B]▶ Reproducir toda la carpeta en aleatorio[/B]", {"shuffle": "1"})):
+            item = xbmcgui.ListItem(label=label)
+            item.setInfo("music", {"title": label})
+            xbmcplugin.addDirectoryItem(HANDLE, url_for(action="playall", target=target, **extra), item, False)
+
+
+def start_slideshow(target, mode):
+    """Lanza la presentación de Kodi con las fotos de la carpeta (Kodi la recorre con slide=1)."""
+    url = target + ("&" if "?" in target else "?") + "slide=1"
+    if mode == "random":
+        xbmc.executebuiltin('SlideShow("{}",recursive,random)'.format(url))
+    else:
+        xbmc.executebuiltin('SlideShow("{}",notrandom)'.format(url))
+    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+
+
+def start_playall(target, shuffle):
+    """Paso 1: se lanza en segundo plano (RunPlugin) para no bloquear la lista."""
+    xbmc.executebuiltin('RunPlugin("{}")'.format(url_for(action="playall_run", target=target, shuffle=shuffle or "")))
+    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+
+
+def run_playall(target, shuffle):
+    """Paso 2: recorre la carpeta, junta las canciones y las reproduce como lista."""
+    global COLLECT
+    COLLECT = []
+    try:
+        query = target.split("?", 1)[1] if "?" in target else ""
+        run([BASE, str(HANDLE), "?" + query])
+        tracks = COLLECT
+    finally:
+        COLLECT = None
+    if not tracks:
+        utils.notify("No hay música reproducible en esta carpeta", error=True)
+        return
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+    playlist.clear()
+    for title, url in tracks:
+        playlist.add(url, player.build_listitem(url, title, "audio"))
+    if shuffle:
+        playlist.shuffle()
+    xbmc.Player().play(playlist)
+    utils.notify("Reproduciendo {} canciones".format(len(tracks)))
+
+
 def add_media(entry):
     title = entry.get("title") or entry.get("name") or "Sin título"
     plot = entry.get("plot", "")
+    if COLLECT is not None:
+        _collect(entry)
+        return
+    if SLIDE and not _is_photo_entry(entry):
+        return  # en la presentación solo entran fotos
+    if _is_cloud_photo(entry):
+        _add_photo(entry)
+        return
+    if _is_cloud_audio(entry):
+        _add_cloud_audio(entry)
+        return
     sources = media.server_sources(entry)
     if media.needs_server_picker(sources):  # Mega, TeraBox, Vidoza, Gamovideo... o varios enlaces
         item = xbmcgui.ListItem(label=title)
@@ -99,6 +267,10 @@ def add_media(entry):
     xbmcplugin.addDirectoryItem(HANDLE, url_for(action="play", url=url, title=title, kind=kind), item, False)
 
 
+# Entradas que no se muestran nunca (aunque vengan del catálogo en línea)
+HIDDEN_TITLES = ("big buck bunny (mp4)",)
+
+
 # ---------- menú principal y secciones ----------
 def list_root():
     for sec in catalog.load_menu():
@@ -123,9 +295,18 @@ def open_section(section_id):
             return
     extras = [(sub["name"], url_for(action="submenu", file=sub["file"]), sub) for sub in sec.get("submenus", [])]
     if sec["id"] == "peliculas_series" and not any(str(s.get("file", "")).startswith("balandro:") for s in sec.get("submenus", [])):
-        for kind in ("search", "main", "movies", "tvshows", "manage"):  # Servidores, si menú.xml no lo define ya
-            label, plot = balandro_bridge.KINDS[kind]
-            extras.append((label, url_for(action="submenu", file="balandro:" + kind), {"plot": plot}))
+        extras.append(("Servidores", url_for(action="submenu", file="balandro:menu"),
+                       {"plot": "Búsqueda general, películas y series de todos los servidores, y gestión de servidores"}))
+    if sec["id"] == "privado":  # carpetas Fotos, Vídeos y Música (Fotos.xml, Videos.xml y Musica.xml de la carpeta Código)
+        hechos = {str(s.get("file", "")) for s in sec.get("submenus", [])}
+        for nombre, archivo, plot in (("Fotos", "Fotos.xml", "Fotos alojadas en Google Drive o Mega"),
+                                      ("Vídeos", "Videos.xml", "Vídeos alojados en Google Drive o Mega"),
+                                      ("Música", "Musica.xml", "Música alojada en Google Drive o Mega")):
+            if archivo not in hechos:
+                extras.append((nombre, url_for(action="submenu", file=archivo), {"plot": plot}))
+        extras.append(("[B]Ajustes del PIN[/B]" if utils.get_setting("pin_privado") else "[B]Poner un PIN a esta sección[/B]",
+                       url_for(action="open_settings"),
+                       {"plot": "Abre los ajustes del addon, categoría Privado, para poner o cambiar el PIN."}))
     idx = catalog.find_category(catalog.load_root(), sec["catalog"])
     if idx < 0:
         if not extras:
@@ -152,6 +333,7 @@ def list_folder(path_str, extras=()):
             utils.log("Error cargando M3U: {}".format(exc), error=True)
             utils.notify("No se pudo cargar la lista M3U", error=True)
     entries += node.get("items", [])
+    entries = [e for e in entries if (e.get("title") or e.get("name") or "").strip().lower() not in HIDDEN_TITLES]
     kinds = set()
     for entry in entries:
         kinds.add(media.item_kind(entry)[0])
@@ -201,7 +383,19 @@ def _parse_code_file(file, use_cache=True):
         return "lista", {"groups": [], "autotest": False}
 
 
+def list_servidores():
+    """Carpeta 'Servidores': agrupa las entradas de Balandro."""
+    for kind in balandro_bridge.MENU_ORDER:
+        add_folder(balandro_bridge.SHORT[kind], url_for(action="submenu", file="balandro:" + kind),
+                   {"plot": balandro_bridge.KINDS[kind][1]})
+    xbmcplugin.setContent(HANDLE, "files")
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
 def open_submenu(file):
+    if file == "balandro:menu":
+        list_servidores()
+        return
     if file.startswith("balandro:"):
         balandro_bridge.run([BASE, str(HANDLE)], kind=file.split(":", 1)[1] or "main")
         return
@@ -304,7 +498,14 @@ def list_tree(file, path_str, root=None, carried=None):
                 entry[key] = value
         return entry
 
+    _add_controls(node.get("items", []), url_for(action="tree", file=file, path=path_str))
     for idx, folder in enumerate(node.get("folders", [])):
+        if folder.get("drive_folder") or folder.get("mega_folder"):  # carpeta de Drive/Mega: se lee al abrirla
+            if folder.get("drive_folder"):
+                add_folder(folder.get("name", "Sin nombre"), url_for(action="cloud", kind="drive", ref=folder["drive_folder"]), with_inherited(folder))
+            else:
+                add_folder(folder.get("name", "Sin nombre"), url_for(action="cloud", kind="mega", ref=folder["mega_folder"]), with_inherited(folder))
+            continue
         target = folder.get("file")
         carry = {k: v for k, v in (("fanart", inherit.get("fanart") if not folder.get("fanart") else folder["fanart"]),
                                    ("tvshow", inherit.get("tvshowtitle") or (folder.get("name") if folder.get("mediatype") == "tvshow" else "")))
@@ -331,13 +532,71 @@ def list_tree(file, path_str, root=None, carried=None):
         file, path_str, len(node.get("folders", [])), len(node.get("items", [])), sin_enlace,
         "sí" if utils.drive_proxy_base() else "no"))
     if node.get("items"):
-        content = "episodes" if any(e.get("episode") for e in node["items"]) else "videos"
+        if all(_is_photo_entry(e) for e in node["items"]):
+            content = "images"  # carpeta solo de fotos: Kodi la muestra como galería y permite presentación
+        elif all(_is_audio_entry(e) for e in node["items"]):
+            content = "songs"
+        else:
+            content = "episodes" if any(e.get("episode") for e in node["items"]) else "videos"
     elif node.get("folders"):
         content = _CONTENT.get(node["folders"][0].get("mediatype", ""), "files")
     else:
         content = "files"
     xbmcplugin.setContent(HANDLE, content)
     xbmcplugin.addSortMethod(HANDLE, xbmcplugin.SORT_METHOD_UNSORTED)
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def list_cloud(kind, ref, sub=""):
+    """Lista una carpeta de Google Drive o de Mega: subcarpetas, fotos, vídeos y música."""
+    folders, entries = [], []
+    try:
+        if kind == "drive":
+            for it in cloudfolders.drive_list(ref, utils.get_setting("drive_api_key")):
+                if it["folder"]:
+                    folders.append((it["name"], url_for(action="cloud", kind="drive", ref=it["id"])))
+                    continue
+                k = cloudfolders.kind_of(it["name"], it["mime"])
+                if k:
+                    entries.append({"title": it["name"], "drive": it["id"], "type": k})
+        else:
+            from . import mega
+            handle, key, nodes = mega.list_folder(ref, sub or None)
+            base = "https://mega.nz/folder/{}#{}".format(handle, key)
+            for n in nodes:
+                if n["folder"]:
+                    folders.append((n["name"], url_for(action="cloud", kind="mega", ref=ref, sub=n["id"])))
+                    continue
+                k = cloudfolders.kind_of(n["name"])
+                if k:
+                    entries.append({"title": n["name"], "url": "{}/file/{}".format(base, n["id"]), "type": k})
+    except ImportError:
+        utils.notify("Falta el addon script.module.pycryptodome (necesario para Mega)", error=True)
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    except (ValueError, RuntimeError) as exc:
+        utils.log("Carpeta {}: {}".format(kind, exc), error=True)
+        if COLLECT is None:
+            xbmcgui.Dialog().ok("multimedia", str(exc))
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    except Exception as exc:
+        utils.log("Carpeta {}: {}".format(kind, exc), error=True)
+        utils.notify("No se pudo leer la carpeta: {}".format(exc)[:120], error=True)
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    _add_controls(entries, url_for(action="cloud", kind=kind, ref=ref, sub=sub) if sub else url_for(action="cloud", kind=kind, ref=ref))
+    for name, url in folders:
+        add_folder(name, url, {})
+    for entry in entries:
+        add_media(entry)
+    if SLIDE or (entries and all(e["type"] == "image" for e in entries)):
+        content = "images"
+    elif entries and all(e["type"] == "audio" for e in entries):
+        content = "songs"
+    else:
+        content = "videos" if entries else "files"
+    xbmcplugin.setContent(HANDLE, content)
     xbmcplugin.endOfDirectory(HANDLE)
 
 
@@ -389,6 +648,8 @@ def run(argv, menu_url=None):
         balandro_bridge.run(argv, argv[2])
         return
     params = dict(parse_qsl(argv[2][1:]))
+    global SLIDE
+    SLIDE = bool(params.get("slide"))
     action = params.get("action")
     if action == "section":
         open_section(params.get("id", ""))
@@ -402,6 +663,19 @@ def run(argv, menu_url=None):
     elif action == "tree":
         list_tree(params.get("file", ""), params.get("path", ""),
                   carried={"fanart": params.get("fanart", ""), "tvshow": params.get("tvshow", "")})
+    elif action == "slideshow":
+        start_slideshow(params.get("target", ""), params.get("mode", ""))
+    elif action == "playall":
+        start_playall(params.get("target", ""), params.get("shuffle", ""))
+    elif action == "playall_run":
+        run_playall(params.get("target", ""), params.get("shuffle", ""))
+    elif action == "cloud":
+        list_cloud(params.get("kind", ""), params.get("ref", ""), params.get("sub", ""))
+    elif action == "open_settings":
+        xbmc.executebuiltin("Addon.OpenSettings(plugin.video.multimedia)")
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+    elif action == "photo_error":
+        photo_error(params.get("msg", ""))
     elif action == "nolink":
         no_link(params.get("title", ""))
     elif action == "play_src":

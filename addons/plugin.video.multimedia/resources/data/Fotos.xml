@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Privado > Fotos.  Fotos alojadas en Google Drive o Mega, para verlas en Kodi.
+
+     Cada <folder> es un álbum (puedes anidar carpetas dentro de carpetas).
+     Cada foto es un <item type="image" ...> con UNO de estos atributos:
+        drive="ENLACE o ID de Google Drive"     (el archivo debe estar compartido como "Cualquier persona con el enlace")
+        mega="ENLACE de Mega"                   (https://mega.nz/file/XXXX#CLAVE)
+        url="https://..."                       (una imagen normal de internet, .jpg/.png...)
+     Opcional: thumb="..." (miniatura), plot="..." (descripción).
+     Si el título acaba en .png/.gif/.webp se indica el formato; si no, se asume JPG.
+
+     Ejemplo (quita las marcas de comentario y pon tus enlaces):
+       <folder name="Vacaciones 2025">
+           <item title="Playa.jpg" type="image" drive="https://drive.google.com/file/d/AAAAAAAAAAAAAAAAAAAAAAAAA/view"/>
+           <item title="Atardecer.jpg" type="image" mega="https://mega.nz/file/XXXXXXXX#YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"/>
+       </folder>
+
+     CARPETAS ENTERAS DE DRIVE O MEGA (lo más cómodo): en vez de poner las fotos una a una, pon la carpeta
+     y el addon muestra TODO lo que haya dentro (subcarpetas, fotos y vídeos)  al abrirla:
+       <folder name="Vacaciones (Drive)" drive_folder="https://drive.google.com/drive/folders/XXXXXXXXXXXXXXXX"/>
+       <folder name="Vacaciones (Mega)"  mega_folder="https://mega.nz/folder/XXXXXXXX#YYYYYYYYYYYYYYYYYYYYYY"/>
+     - Drive: la carpeta debe estar compartida como "Cualquier persona con el enlace".
+       Si es muy grande o Drive no deja verla, pon tu clave API de Drive en los ajustes del addon.
+     - Mega: usa el enlace completo de la carpeta (con la # y la clave). Necesita script.module.pycryptodome.
+
+     Esta carpeta puede mezclar fotos y vídeos: los vídeos son <item ... drive="..."/> / mega="..." sin type="image".
+     PRESENTACIÓN AUTOMÁTICA: en cualquier carpeta con fotos aparecen arriba las opciones
+       "Presentación automática" (las fotos de esa carpeta, en orden) y
+       "Presentación aleatoria (con subcarpetas)" (todas las fotos, también las de las subcarpetas, mezcladas).
+     El tiempo entre fotos se cambia en Kodi: Ajustes > Reproductor > Imágenes (o Ajustes > Medios > Imágenes). -->
+<tree name="Fotos">
+    <folder name="Mi primer álbum">
+        <item title="(Añade aquí tus fotos de Drive o Mega - mira los comentarios de Fotos.xml)" type="image" drive=""/>
+    </folder>
+</tree>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Privado > Vídeos.  Vídeos alojados en Google Drive o Mega, para reproducirlos en Kodi.
+
+     Cada <folder> es una carpeta/álbum (puedes anidar). Cada vídeo es un <item ...> con UNO de estos atributos:
+        drive="ENLACE o ID de Google Drive"     (compartido como "Cualquier persona con el enlace")
+        mega="ENLACE de Mega"                   (https://mega.nz/file/XXXX#CLAVE)
+        url="https://...mp4"                    (enlace directo)
+     Opcional: thumb="..." (miniatura), plot="..." (descripción).
+     También puedes poner fotos en esta carpeta (type="image", ver Fotos.xml).
+
+     CARPETAS ENTERAS DE DRIVE O MEGA (lo más cómodo): en vez de poner las fotos una a una, pon la carpeta
+     y el addon muestra TODO lo que haya dentro (subcarpetas, vídeos y fotos)  al abrirla:
+       <folder name="Vacaciones (Drive)" drive_folder="https://drive.google.com/drive/folders/XXXXXXXXXXXXXXXX"/>
+       <folder name="Vacaciones (Mega)"  mega_folder="https://mega.nz/folder/XXXXXXXX#YYYYYYYYYYYYYYYYYYYYYY"/>
+     - Drive: la carpeta debe estar compartida como "Cualquier persona con el enlace".
+       Si es muy grande o Drive no deja verla, pon tu clave API de Drive en los ajustes del addon.
+     - Mega: usa el enlace completo de la carpeta (con la # y la clave). Necesita script.module.pycryptodome.
+
+     Ejemplo:
+       <folder name="Mis vídeos">
+           <item title="Cumpleaños" drive="https://drive.google.com/file/d/AAAAAAAAAAAAAAAAAAAAAAAAA/view"/>
+           <item title="Viaje" mega="https://mega.nz/file/XXXXXXXX#YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"/>
+       </folder> -->
+<tree name="Vídeos">
+    <folder name="Mis vídeos">
+        <item title="(Añade aquí tus vídeos de Drive o Mega - mira los comentarios de Videos.xml)" drive=""/>
+    </folder>
+</tree>

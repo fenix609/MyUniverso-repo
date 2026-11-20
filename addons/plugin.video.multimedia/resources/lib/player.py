@@ -78,7 +78,7 @@ def drive_preflight(url):
 
 
 def resolve(handle, url, title="", kind="video"):
-    if kind == "video" and _is_drive_proxy(url):
+    if kind in ("video", "audio") and _is_drive_proxy(url):
         state, message = drive_preflight(url)
         utils.log("Drive vía proxy local: comprobación previa = {} {}".format(state, message))
         if state == "denied":

@@ -22,7 +22,7 @@ msgid "Catalog URL"
 msgstr ""
 
 msgctxt "#30003"
-msgid "PIN for the Private section (empty = no PIN)"
+msgid "PIN for the Private section (digits only; empty = no PIN)"
 msgstr ""
 
 msgctxt "#30004"
@@ -47,4 +47,8 @@ msgstr ""
 
 msgctxt "#30009"
 msgid "TeraBox 'ndus' cookie"
+msgstr ""
+
+msgctxt "#30010"
+msgid "Private"
 msgstr ""

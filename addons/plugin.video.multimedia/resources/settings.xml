@@ -8,12 +8,6 @@
                     <default>https://raw.githubusercontent.com/fenix609/MyUniverso-repo/main/content/catalog.json</default>
                     <control type="edit" format="string"><heading>30002</heading></control>
                 </setting>
-                <setting id="pin_privado" type="string" label="30003">
-                    <level>0</level>
-                    <default></default>
-                    <constraints><allowempty>true</allowempty></constraints>
-                    <control type="edit" format="string"><heading>30004</heading></control>
-                </setting>
                 <setting id="drive_proxy" type="boolean" label="30007">
                     <level>0</level>
                     <default>true</default>
@@ -30,6 +24,16 @@
                     <default></default>
                     <constraints><allowempty>true</allowempty></constraints>
                     <control type="edit" format="string"><heading>30009</heading></control>
+                </setting>
+            </group>
+        </category>
+        <category id="privado" label="30010">
+            <group id="1">
+                <setting id="pin_privado" type="string" label="30003">
+                    <level>0</level>
+                    <default></default>
+                    <constraints><allowempty>true</allowempty></constraints>
+                    <control type="edit" format="string"><heading>30004</heading><hidden>true</hidden></control>
                 </setting>
             </group>
         </category>

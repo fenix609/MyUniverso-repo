@@ -22,6 +22,11 @@ KINDS = {
 }
 
 
+# Orden y nombre corto de las entradas dentro de la carpeta "Servidores"
+MENU_ORDER = ("search", "main", "movies", "tvshows", "manage")
+SHORT = {"search": "Buscar", "main": "Todos los servidores", "movies": "Películas", "tvshows": "Series", "manage": "Gestionar servidores"}
+
+
 def is_balandro_query(raw):
     """True si la cadena de parámetros ('?....') la generó Balandro."""
     raw = (raw or "")[1:] if (raw or "").startswith("?") else (raw or "")

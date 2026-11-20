@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Privado > Música.  Música alojada en Google Drive o Mega, para escucharla en Kodi.
+
+     Cada <folder> es una carpeta/álbum (puedes anidar). Cada canción es un <item type="audio" ...> con UNO de estos atributos:
+        drive="ENLACE o ID de Google Drive"     (compartido como "Cualquier persona con el enlace")
+        mega="ENLACE de Mega"                   (https://mega.nz/file/XXXX#CLAVE)
+        url="https://...mp3"                    (enlace directo)
+     Opcional: artist="..." album="..." thumb="..." (carátula).
+
+     CARPETAS ENTERAS DE DRIVE O MEGA (lo más cómodo): pon la carpeta y el addon muestra TODA la música que haya dentro
+     (mp3, flac, m4a, wav, ogg...) y sus subcarpetas al abrirla:
+       <folder name="Mi música (Drive)" drive_folder="https://drive.google.com/drive/folders/XXXXXXXXXXXXXXXX"/>
+       <folder name="Mi música (Mega)"  mega_folder="https://mega.nz/folder/XXXXXXXX#YYYYYYYYYYYYYYYYYYYYYY"/>
+     - Drive: la carpeta debe estar compartida como "Cualquier persona con el enlace".
+       Si es muy grande o Drive no deja verla, pon tu clave API de Drive en los ajustes del addon.
+     - Mega: usa el enlace completo de la carpeta (con la # y la clave). Necesita script.module.pycryptodome.
+
+     Dentro de cada carpeta con música aparecen arriba las opciones
+       "Reproducir toda la carpeta"  y  "Reproducir toda la carpeta en aleatorio".
+
+     Ejemplo de canciones sueltas:
+       <folder name="Mis canciones">
+           <item title="Canción 1" type="audio" drive="https://drive.google.com/file/d/AAAAAAAAAAAAAAAAAAAAAAAAA/view"/>
+           <item title="Canción 2" type="audio" mega="https://mega.nz/file/XXXXXXXX#YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"/>
+       </folder> -->
+<tree name="Música">
+    <folder name="Mi música">
+        <item title="(Añade aquí tu música de Drive o Mega - mira los comentarios de Musica.xml)" type="audio" drive=""/>
+    </folder>
+</tree>
