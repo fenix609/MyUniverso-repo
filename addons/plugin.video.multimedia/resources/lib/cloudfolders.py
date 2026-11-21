@@ -47,6 +47,30 @@ def drive_folder_id(ref):
     return ""
 
 
+_LINK_KEYS = ("drive", "url", "mega", "link", "enlace")
+
+
+def folder_link(entry):
+    """('drive'|'mega', enlace) si un <item> apunta a una CARPETA compartida en vez de a un archivo.
+
+    Así vale tanto <folder drive_folder="..."/> como <item drive="https://drive.google.com/drive/folders/..."/>.
+    """
+    for key in _LINK_KEYS:
+        value = (entry.get(key) or "").strip()
+        if "://" not in value:
+            continue
+        parsed = urlparse(value)
+        host, path = parsed.netloc.lower(), parsed.path
+        if host in ("drive.google.com", "docs.google.com") and "/folders/" in path:
+            return ("drive", value)
+        if host.endswith(("mega.nz", "mega.co.nz")):
+            nuevo = "/folder/" in path and "/file/" not in parsed.fragment       # .../folder/ID#CLAVE (sin /file/ detrás)
+            antiguo = parsed.fragment.startswith("F!") and len(parsed.fragment.split("!")) <= 3  # #F!ID!CLAVE
+            if nuevo or antiguo:
+                return ("mega", value)
+    return None
+
+
 def _get(url, timeout=25):
     return urlopen(Request(url, headers={"User-Agent": _UA, "Accept-Language": "es"}), timeout=timeout).read().decode("utf-8", "replace")
 

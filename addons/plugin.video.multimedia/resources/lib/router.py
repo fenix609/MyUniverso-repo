@@ -192,6 +192,11 @@ def run_playall(target, shuffle):
 def add_media(entry):
     title = entry.get("title") or entry.get("name") or "Sin título"
     plot = entry.get("plot", "")
+    folder = cloudfolders.folder_link(entry)
+    if folder:  # el enlace es de una carpeta de Drive/Mega: se abre y se lista su contenido
+        if COLLECT is None:
+            add_folder(title, url_for(action="cloud", kind=folder[0], ref=folder[1]), entry)
+        return
     if COLLECT is not None:
         _collect(entry)
         return
@@ -247,6 +252,13 @@ def add_media(entry):
         return
 
     url = entry.get("url", "")
+    if not url and kind != "image":
+        utils.log("'{}': sin dirección reproducible (revisa drive/mega/url en el XML)".format(title), error=True)
+        item = xbmcgui.ListItem(label=title)
+        _art(item, entry)
+        item.setProperty("IsPlayable", "true")
+        xbmcplugin.addDirectoryItem(HANDLE, url_for(action="nolink", title=title), item, False)
+        return
     if entry.get("headers"):
         url = "{}|{}".format(url, entry["headers"])
 
@@ -689,6 +701,10 @@ def run(argv, menu_url=None):
     elif action == "play":
         utils.log("play '{}' kind={} destino={}".format(params.get("title", ""), params.get("kind", "video"),
                                                        utils.safe_url(params.get("url", ""))))
+        if not params.get("url"):
+            utils.log("play '{}': llegó sin dirección".format(params.get("title", "")), error=True)
+            no_link(params.get("title", ""))
+            return
         player.resolve(HANDLE, params["url"], params.get("title", ""), params.get("kind", "video"))
     else:
         list_root()
