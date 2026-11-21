@@ -28,11 +28,19 @@ SHORT = {"search": "Buscar", "main": "Todos los servidores", "movies": "Películ
 
 
 def is_balandro_query(raw):
-    """True si la cadena de parámetros ('?....') la generó Balandro."""
+    """True si la cadena de parámetros ('?....') la generó Balandro.
+
+    Balandro codifica su Item en base64 y lo pone tal cual tras la '?': ese texto no lleva ningún '='
+    (el relleno va escapado como %3D). El formato antiguo llevaba channel=...
+    Cualquier otra cosa con '=' es nuestra (action=...) o la añade Kodi al abrir el addon desde
+    Vídeos (content_type=video): en esos casos hay que mostrar el menú principal, no lanzar Balandro.
+    """
     raw = (raw or "")[1:] if (raw or "").startswith("?") else (raw or "")
-    return bool(raw) and ("action=" not in raw or "channel=" in raw)
-
-
+    if not raw:
+        return False
+    if "channel=" in raw:  # formato antiguo de Balandro
+        return True
+    return "=" not in raw
 def _prepare():
     if BAL_DIR not in sys.path:
         sys.path.insert(0, BAL_DIR)

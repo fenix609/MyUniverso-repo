@@ -92,7 +92,7 @@
         <language>es</language>
     </extension>
 </addon>
-<addon id="plugin.video.multimedia" name="multimedia" version="1.10.5" provider-name="fenix609">
+<addon id="plugin.video.multimedia" name="multimedia" version="1.10.6" provider-name="fenix609">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="plugin.video.youtube"/>
@@ -108,7 +108,7 @@
     <extension point="xbmc.addon.metadata">
         <summary lang="es_ES">multimedia</summary>
         <description lang="es_ES">Reproduce vídeo, música, fotos, listas M3U, torrents y enlaces de Drive, Mega, TeraBox, Vidoza o Gamovideo. El catálogo se carga desde GitHub (fenix609/MyUniverso-repo).</description>
-        <news>1.10.5: presentación automática de fotos y carpeta Música (Drive/Mega). 1.10.4: PIN del Privado en ajustes; carpetas enteras de Drive y Mega. 1.10.3: carpeta Servidores, Privado con Fotos y Vídeos (Drive/Mega). 1.10.2: gestor de servidores (activar, desactivar, añadir). 1.10.1: búsqueda general más rápida. 1.10.0: Servidores (basado en Balandro, Team Balandro, GPL v3) integrado en Películas y Series. 1.9.0: enlaces de Mega, TeraBox, Vidoza, Gamovideo y otros servidores además de Google Drive, con selector de servidor. Nuevo submenú Prueba servidores.</news>
+        <news>1.10.6: corregido el arranque desde Vídeos (Kodi añade content_type=video y se tomaba por una orden de Balandro); paquete más ligero (imágenes recomprimidas y sin archivos de prueba). 1.10.5: presentación automática de fotos y carpeta Música (Drive/Mega). 1.10.4: PIN del Privado en ajustes; carpetas enteras de Drive y Mega. 1.10.3: carpeta Servidores, Privado con Fotos y Vídeos (Drive/Mega). 1.10.2: gestor de servidores (activar, desactivar, añadir). 1.10.1: búsqueda general más rápida. 1.10.0: Servidores (basado en Balandro, Team Balandro, GPL v3) integrado en Películas y Series. 1.9.0: enlaces de Mega, TeraBox, Vidoza, Gamovideo y otros servidores además de Google Drive, con selector de servidor. Nuevo submenú Prueba servidores.</news>
         <platform>all</platform>
         <license>GNU GPL v3</license>
         <assets>
